@@ -617,6 +617,282 @@ app.get('/api/shops/:id/status', requireAuth, async (req, res) => {
   }
 });
 
+// Test email endpoint (for configuration testing)
+app.post('/api/test-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const emailService = await import('./auth/email.js');
+    const testToken = 'test-' + Date.now();
+    const result = await emailService.sendMagicLink(email, testToken);
+    
+    res.json({ 
+      success: true, 
+      message: 'Test email sent successfully',
+      recipient: email,
+      provider: process.env.EMAIL_PROVIDER || 'not configured'
+    });
+  } catch (error) {
+    console.error('Test email error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      provider: process.env.EMAIL_PROVIDER || 'not configured'
+    });
+  }
+});
+
+// 密码登录
+app.post('/auth/password/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const passwordAuth = await import('./auth/password.js');
+    const result = await passwordAuth.loginWithPassword(email, password);
+    
+    if (!result.success) {
+      return res.status(401).json({ error: result.error });
+    }
+
+    // 记录审计日志
+    await logAuditEvent(result.user.id, 'password_login', 'user', result.user.id, {
+      email: result.user.email,
+      ip: req.ip,
+      user_agent: req.get('User-Agent')
+    }, req);
+
+    // 设置会话
+    req.login(result.user, (err) => {
+      if (err) {
+        console.error('Login session error:', err);
+        return res.status(500).json({ error: 'Login failed' });
+      }
+      res.json({ success: true, user: result.user });
+    });
+  } catch (error) {
+    console.error('Password login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// 注册用户
+app.post('/auth/password/register', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    // 密码强度检验
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    const passwordAuth = await import('./auth/password.js');
+    const result = await passwordAuth.registerWithPassword(email, password, name);
+    
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    // 记录审计日志
+    await logAuditEvent(result.user.id, 'user_register', 'user', result.user.id, {
+      email: result.user.email,
+      method: 'password',
+      ip: req.ip,
+      user_agent: req.get('User-Agent')
+    }, req);
+
+    res.json({ 
+      success: true, 
+      message: result.message,
+      user: {
+        id: result.user.id,
+        email: result.user.email,
+        name: result.user.name,
+        email_verified: result.user.email_verified
+      }
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// 邮箱验证
+app.get('/auth/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Verification token is required' });
+    }
+
+    const passwordAuth = await import('./auth/password.js');
+    const result = await passwordAuth.verifyEmail(token);
+    
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    // 记录审计日志
+    await logAuditEvent(result.user.id, 'email_verified', 'user', result.user.id, {
+      email: result.user.email,
+      ip: req.ip,
+      user_agent: req.get('User-Agent')
+    }, req);
+
+    // 自动登录已验证的用户
+    req.login(result.user, (err) => {
+      if (err) {
+        console.error('Auto login error:', err);
+        return res.json({ 
+          success: true, 
+          message: result.message,
+          user: result.user
+        });
+      }
+      
+      // 重定向到仪表板
+      res.redirect('/?verified=true');
+    });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+// 发送密码重置邮件
+app.post('/auth/password/forgot', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const passwordAuth = await import('./auth/password.js');
+    const result = await passwordAuth.sendPasswordReset(email);
+    
+    // 总是返回成功（安全考虑）
+    res.json({ 
+      success: true, 
+      message: result.message
+    });
+  } catch (error) {
+    console.error('Password reset request error:', error);
+    res.status(500).json({ error: 'Failed to send reset email' });
+  }
+});
+
+// 重置密码
+app.post('/auth/password/reset', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and new password are required' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    const passwordAuth = await import('./auth/password.js');
+    const result = await passwordAuth.resetPassword(token, password);
+    
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    // 记录审计日志
+    await logAuditEvent(result.user.id, 'password_reset', 'user', result.user.id, {
+      email: result.user.email,
+      ip: req.ip,
+      user_agent: req.get('User-Agent')
+    }, req);
+
+    res.json({ 
+      success: true, 
+      message: result.message
+    });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    res.status(500).json({ error: 'Password reset failed' });
+  }
+});
+
+// 更改密码（已登录用户）
+app.post('/auth/password/change', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    if (!newPassword) {
+      return res.status(400).json({ error: 'New password is required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
+    }
+
+    const passwordAuth = await import('./auth/password.js');
+    const result = await passwordAuth.changePassword(req.user.id, currentPassword, newPassword);
+    
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    // 记录审计日志
+    await logAuditEvent(req.user.id, 'password_change', 'user', req.user.id, {
+      email: req.user.email,
+      ip: req.ip,
+      user_agent: req.get('User-Agent')
+    }, req);
+
+    res.json({ 
+      success: true, 
+      message: result.message
+    });
+  } catch (error) {
+    console.error('Password change error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// 重新发送验证邮件
+app.post('/auth/resend-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const passwordAuth = await import('./auth/password.js');
+    const result = await passwordAuth.sendEmailVerification(email);
+    
+    if (!result.success) {
+      return res.status(400).json({ error: result.error });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Verification email sent'
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ error: 'Failed to send verification email' });
+  }
+});
+
 const port = process.env.PORT || 3000;
 const server = app.listen(port, '0.0.0.0', () => {
   console.log(`shopsaas listening on ${port}`);

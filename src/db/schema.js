@@ -8,6 +8,10 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 255 }),
   avatar_url: text('avatar_url'),
   email_verified: boolean('email_verified').default(false),
+  email_verified_at: timestamp('email_verified_at'), // 邮箱验证时间
+  last_login_at: timestamp('last_login_at'), // 最后登录时间
+  password_reset_token: varchar('password_reset_token', { length: 255 }), // 密码重置 token
+  password_reset_expires: timestamp('password_reset_expires'), // 密码重置过期时间
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 });

@@ -256,6 +256,29 @@
             </form>
             
             <div id="message" class="message" style="display: none;"></div>
+
+            <div class="divider" style="margin-top:24px">
+              <span>or</span>
+            </div>
+
+            <form id="password-form" class="email-form">
+              <div class="form-group">
+                <label for="password-email">Email Address</label>
+                <input type="email" id="password-email" name="password-email" placeholder="you@example.com" required>
+              </div>
+              <div class="form-group">
+                <label for="password-password">Password</label>
+                <input type="password" id="password-password" name="password-password" placeholder="Your password" required>
+              </div>
+              <button type="submit" class="primary-button" id="password-submit">Sign in with password</button>
+              <div style="margin-top:10px; font-size:14px;">
+                <a href="#" onclick="forgotPassword(); return false;">Forgot password?</a>
+                <span style="color:#999; margin: 0 6px;">•</span>
+                <a href="#" onclick="registerAccount(); return false;">Create account</a>
+              </div>
+            </form>
+
+            <div id="password-message" class="message" style="display:none;"></div>
         </div>
 
         <!-- Dashboard Section -->
@@ -390,6 +413,95 @@
             submitBtn.disabled = false;
             submitBtn.textContent = 'Send Magic Link';
         });
+
+        // Password login form
+        document.getElementById('password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('password-submit');
+            const messageEl = document.getElementById('password-message');
+            const email = document.getElementById('password-email').value;
+            const password = document.getElementById('password-password').value;
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in...';
+
+            try {
+                const response = await fetch('/auth/password/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    messageEl.className = 'message success';
+                    messageEl.textContent = 'Signed in successfully!';
+                    messageEl.style.display = 'block';
+                    // refresh auth state
+                    checkAuth();
+                } else {
+                    throw new Error(data.error || 'Login failed');
+                }
+            } catch (error) {
+                messageEl.className = 'message error';
+                messageEl.textContent = error.message;
+                messageEl.style.display = 'block';
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Sign in with password';
+        });
+
+        async function forgotPassword() {
+            const email = document.getElementById('password-email').value || prompt('Enter your email address');
+            if (!email) return;
+            const messageEl = document.getElementById('password-message');
+            try {
+                const resp = await fetch('/auth/password/forgot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                await resp.json();
+                messageEl.className = 'message success';
+                messageEl.textContent = 'If the email exists, a reset link has been sent.';
+                messageEl.style.display = 'block';
+            } catch (e) {
+                messageEl.className = 'message error';
+                messageEl.textContent = 'Failed to send reset link';
+                messageEl.style.display = 'block';
+            }
+        }
+
+        async function registerAccount() {
+            const name = prompt('Your name (optional)') || null;
+            const email = document.getElementById('password-email').value || prompt('Your email');
+            if (!email) return;
+            const password = document.getElementById('password-password').value || prompt('Create a password (min 8 chars)');
+            if (!password || password.length < 8) {
+                alert('Password must be at least 8 characters.');
+                return;
+            }
+            const messageEl = document.getElementById('password-message');
+            try {
+                const resp = await fetch('/auth/password/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, name })
+                });
+                const data = await resp.json();
+                if (resp.ok) {
+                    messageEl.className = 'message success';
+                    messageEl.textContent = 'Account created. Please check your email to verify.';
+                    messageEl.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'Registration failed');
+                }
+            } catch (e) {
+                messageEl.className = 'message error';
+                messageEl.textContent = e.message;
+                messageEl.style.display = 'block';
+            }
+        }
 
         // Create shop form
         document.getElementById('create-shop-form').addEventListener('submit', async (e) => {
