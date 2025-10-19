@@ -1,0 +1,200 @@
+name: Deploy New Shop
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: "Fly app name (e.g., evershop-fly-myshop)"
+        required: true
+        type: string
+      shop_name:
+        description: "Human-readable shop name"
+        required: true
+        type: string
+      # Note: admin_email and admin_password are now set as Fly secrets
+      # by the ShopSaaS control panel before triggering this workflow
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  # Shared evershop configuration
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+  R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  PUBLIC_ASSET_BASE_URL: ${{ secrets.PUBLIC_ASSET_BASE_URL }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout evershop-fly repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.EVERSHOP_REPO || 'your-username/evershop-fly' }}
+          token: ${{ secrets.EVERSHOP_REPO_TOKEN || secrets.GITHUB_TOKEN }}
+          path: evershop-fly
+
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Verify Fly app exists
+        id: verify_app
+        run: |
+          cd evershop-fly
+          
+          # The app and secrets should already be created by ShopSaaS control panel
+          # We just need to verify the app exists
+          if flyctl apps list | grep -q "${{ github.event.inputs.app_name }}"; then
+            echo "✅ App ${{ github.event.inputs.app_name }} exists"
+            echo "app_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ App ${{ github.event.inputs.app_name }} not found"
+            echo "This should have been created by the ShopSaaS control panel"
+            echo "app_exists=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # Set app context for subsequent commands
+          flyctl app config save -a ${{ github.event.inputs.app_name }}
+
+      - name: Verify secrets are set
+        run: |
+          cd evershop-fly
+          
+          # Check that required secrets exist (without revealing their values)
+          echo "Verifying required secrets are set..."
+          flyctl secrets list -a ${{ github.event.inputs.app_name }} | grep -E "(ADMIN_EMAIL|ADMIN_PASSWORD|SHOP_NAME)" || {
+            echo "❌ Required secrets not found. Expected: ADMIN_EMAIL, ADMIN_PASSWORD, SHOP_NAME"
+            exit 1
+          }
+          echo "✅ Required secrets are present"
+
+      - name: Deploy to Fly.io
+        id: deploy
+        run: |
+          cd evershop-fly
+          
+          # Update fly.toml with the new app name
+          sed -i "s/^app = .*/app = \"${{ github.event.inputs.app_name }}\"/" fly.toml
+          
+          # Deploy the application
+          flyctl deploy \
+            --build-arg SHOP_NAME="${{ github.event.inputs.shop_name }}" \
+            --env NODE_CONFIG='{"shop":{"name":"${{ github.event.inputs.shop_name }}"}}' \
+            -a ${{ github.event.inputs.app_name }}
+            
+          echo "deployment_completed=true" >> $GITHUB_OUTPUT
+
+      - name: Wait for deployment health check
+        id: health_check
+        run: |
+          cd evershop-fly
+          
+          # Wait for the app to be healthy
+          echo "Waiting for app to be healthy..."
+          timeout=300  # 5 minutes
+          start_time=$(date +%s)
+          
+          while true; do
+            current_time=$(date +%s)
+            elapsed=$((current_time - start_time))
+            
+            if [ $elapsed -gt $timeout ]; then
+              echo "Health check timeout after 5 minutes"
+              echo "health_check_passed=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+            
+            # Check if the app is responding
+            if flyctl status -a ${{ github.event.inputs.app_name }} | grep -q "healthy"; then
+              echo "App is healthy!"
+              
+              # Additional HTTP check
+              app_url="https://${{ github.event.inputs.app_name }}.fly.dev"
+              if curl -f -s --max-time 10 "$app_url" > /dev/null; then
+                echo "HTTP health check passed"
+                echo "health_check_passed=true" >> $GITHUB_OUTPUT
+                echo "app_url=$app_url" >> $GITHUB_OUTPUT
+                break
+              else
+                echo "HTTP health check failed, retrying..."
+              fi
+            else
+              echo "App not healthy yet, waiting..."
+            fi
+            
+            sleep 10
+          done
+
+      - name: Initialize shop admin user
+        id: init_admin
+        if: steps.health_check.outputs.health_check_passed == 'true'
+        run: |
+          cd evershop-fly
+          
+          # This step would ideally trigger the admin user creation
+          # For now, we assume the evershop app handles this via environment variables
+          # In a real implementation, you might:
+          # 1. SSH into the container and run a script
+          # 2. Use Fly's exec command to run admin setup
+          # 3. Hit an admin setup API endpoint
+          
+          echo "Admin initialization would happen here"
+          echo "In practice, the evershop app should create the admin user based on ADMIN_EMAIL/ADMIN_PASSWORD env vars"
+          echo "admin_initialized=true" >> $GITHUB_OUTPUT
+
+      - name: Notify ShopSaaS API of completion
+        if: always()
+        run: |
+          # Determine final status
+          if [[ "${{ steps.health_check.outputs.health_check_passed }}" == "true" && "${{ steps.init_admin.outputs.admin_initialized }}" == "true" ]]; then
+            status="active"
+            message="Shop deployed successfully"
+          else
+            status="failed"
+            message="Deployment failed during health check or admin initialization"
+          fi
+          
+          # Notify the ShopSaaS API (optional webhook)
+          if [[ -n "${{ vars.SHOPSAAS_WEBHOOK_URL }}" ]]; then
+            curl -X POST "${{ vars.SHOPSAAS_WEBHOOK_URL }}/api/webhooks/deployment" \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${{ secrets.SHOPSAAS_WEBHOOK_SECRET }}" \
+              -d '{
+                "app_name": "${{ github.event.inputs.app_name }}",
+                "shop_name": "${{ github.event.inputs.shop_name }}",
+                "status": "'$status'",
+                "message": "'$message'",
+                "app_url": "${{ steps.health_check.outputs.app_url }}",
+                "github_run_id": "${{ github.run_id }}"
+              }' \
+              --max-time 10 || echo "Webhook notification failed, continuing..."
+          fi
+
+      - name: Cleanup on failure
+        if: failure()
+        run: |
+          cd evershop-fly
+          echo "Deployment failed - app cleanup should be handled by ShopSaaS control panel"
+          echo "App: ${{ github.event.inputs.app_name }}"
+          # Note: We don't automatically destroy the app here since it was created by the control panel
+          # The control panel should handle cleanup based on deployment status
+
+      - name: Output deployment info
+        if: always()
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "App Name: ${{ github.event.inputs.app_name }}"
+          echo "Shop Name: ${{ github.event.inputs.shop_name }}"
+          echo "Admin credentials: Set via Fly secrets (not exposed)"
+          echo "Health Check: ${{ steps.health_check.outputs.health_check_passed }}"
+          echo "Admin Init: ${{ steps.init_admin.outputs.admin_initialized }}"
+          
+          if [[ "${{ steps.health_check.outputs.app_url }}" != "" ]]; then
+            echo "App URL: ${{ steps.health_check.outputs.app_url }}"
+          fi

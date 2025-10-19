@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopSaaS - Create Your Online Store</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+        .auth-section {
+            margin-bottom: 32px;
+        }
+        .auth-button {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            color: #333;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+        .auth-button:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+        .auth-button.google {
+            border-color: #db4437;
+        }
+        .auth-button.google:hover {
+            background: #db4437;
+            color: white;
+        }
+        .auth-button.github {
+            border-color: #333;
+        }
+        .auth-button.github:hover {
+            background: #333;
+            color: white;
+        }
+        .divider {
+            margin: 24px 0;
+            position: relative;
+        }
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #ddd;
+        }
+        .divider span {
+            background: white;
+            padding: 0 16px;
+            color: #666;
+            font-size: 14px;
+        }
+        .email-form {
+            text-align: left;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        input[type="email"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .primary-button {
+            width: 100%;
+            padding: 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .primary-button:hover {
+            background: #5a67d8;
+        }
+        .primary-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .message.success {
+            background: #f0fff4;
+            color: #38a169;
+            border: 1px solid #c6f6d5;
+        }
+        .message.error {
+            background: #fed7d7;
+            color: #e53e3e;
+            border: 1px solid #feb2b2;
+        }
+        .dashboard {
+            display: none;
+        }
+        .dashboard.active {
+            display: block;
+        }
+        .user-info {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        .user-info h3 {
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        .shops-section h3 {
+            text-align: left;
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+        .shop-item {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .shop-item h4 {
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        .shop-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .shop-status.creating {
+            background: #fef5e7;
+            color: #d69e2e;
+        }
+        .shop-status.active {
+            background: #f0fff4;
+            color: #38a169;
+        }
+        .shop-status.failed {
+            background: #fed7d7;
+            color: #e53e3e;
+        }
+        .create-shop-form {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 24px;
+            text-align: left;
+        }
+        .logout-button {
+            color: #667eea;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Section -->
+        <div id="login-section">
+            <h1>ShopSaaS</h1>
+            <p class="subtitle">Create and manage your online stores</p>
+            
+            <div class="auth-section">
+                <a href="/auth/google" class="auth-button google">
+                    🔍 Continue with Google
+                </a>
+                <a href="/auth/github" class="auth-button github">
+                    🐙 Continue with GitHub
+                </a>
+            </div>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            
+            <form id="email-form" class="email-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                </div>
+                <button type="submit" class="primary-button" id="email-submit">
+                    Send Magic Link
+                </button>
+            </form>
+            
+            <div id="message" class="message" style="display: none;"></div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="dashboard">
+            <div class="user-info">
+                <h3 id="user-name">Welcome!</h3>
+                <p id="user-email"></p>
+                <button class="logout-button" onclick="logout()">Logout</button>
+            </div>
+
+            <div class="shops-section">
+                <h3>Your Shops</h3>
+                <div id="shops-list"></div>
+                
+                <div class="create-shop-form">
+                    <h4 style="margin-bottom: 16px;">Create New Shop</h4>
+                    <form id="create-shop-form">
+                        <div class="form-group">
+                            <label for="shop_name">Shop Name</label>
+                            <input type="text" id="shop_name" name="shop_name" placeholder="My Awesome Store" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="admin_email">Admin Email</label>
+                            <input type="email" id="admin_email" name="admin_email" placeholder="admin@yourstore.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="admin_password">Admin Password</label>
+                            <input type="password" id="admin_password" name="admin_password" placeholder="Strong password" required>
+                        </div>
+                        <button type="submit" class="primary-button" id="create-shop-submit">
+                            Create Shop
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is logged in on page load
+        checkAuth();
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/user');
+                const data = await response.json();
+                
+                if (data.user) {
+                    showDashboard(data.user);
+                } else {
+                    showLogin();
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showLogin();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('login-section').style.display = 'block';
+            document.getElementById('dashboard-section').style.display = 'none';
+        }
+
+        async function showDashboard(user) {
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('dashboard-section').style.display = 'block';
+            
+            document.getElementById('user-name').textContent = user.name || 'Welcome!';
+            document.getElementById('user-email').textContent = user.email;
+            
+            loadShops();
+        }
+
+        async function loadShops() {
+            try {
+                const response = await fetch('/api/shops');
+                const data = await response.json();
+                
+                const shopsList = document.getElementById('shops-list');
+                if (data.shops && data.shops.length > 0) {
+                    shopsList.innerHTML = data.shops.map(shop => `
+                        <div class="shop-item">
+                            <h4>${shop.shop_name}</h4>
+                            <p>URL: <a href="https://${shop.app_name}.fly.dev" target="_blank">${shop.app_name}.fly.dev</a></p>
+                            <p>Status: <span class="shop-status ${shop.status}">${shop.status}</span></p>
+                            <p>Created: ${new Date(shop.created_at).toLocaleDateString()}</p>
+                        </div>
+                    `).join('');
+                } else {
+                    shopsList.innerHTML = '<p style="color: #666;">No shops yet. Create your first shop below!</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load shops:', error);
+                document.getElementById('shops-list').innerHTML = '<p style="color: #e53e3e;">Failed to load shops</p>';
+            }
+        }
+
+        // Email login form
+        document.getElementById('email-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('email-submit');
+            const messageEl = document.getElementById('message');
+            const email = document.getElementById('email').value;
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            
+            try {
+                const response = await fetch('/auth/email/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    messageEl.className = 'message success';
+                    messageEl.textContent = 'Magic link sent! Check your email.';
+                    messageEl.style.display = 'block';
+                } else {
+                    throw new Error(data.error || 'Failed to send magic link');
+                }
+            } catch (error) {
+                messageEl.className = 'message error';
+                messageEl.textContent = error.message;
+                messageEl.style.display = 'block';
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send Magic Link';
+        });
+
+        // Create shop form
+        document.getElementById('create-shop-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('create-shop-submit');
+            const form = e.target;
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+            
+            try {
+                const formData = new FormData(form);
+                const data = {
+                    shop_name: formData.get('shop_name'),
+                    admin_email: formData.get('admin_email'),
+                    admin_password: formData.get('admin_password'),
+                };
+                
+                const response = await fetch('/api/shops', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    form.reset();
+                    loadShops(); // Reload the shops list
+                    alert('Shop creation started! This may take a few minutes.');
+                } else {
+                    throw new Error(result.error || 'Failed to create shop');
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Shop';
+        });
+
+        async function logout() {
+            try {
+                await fetch('/auth/logout', { method: 'POST' });
+                showLogin();
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+    </script>
+</body>
+</html>
