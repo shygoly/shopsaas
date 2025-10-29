@@ -26,19 +26,6 @@ jobs:
           echo "Creating Fly app: ${{ steps.payload.outputs.app_name }}"
           flyctl apps create ${{ steps.payload.outputs.app_name }} --org chada || echo "App may already exist"
 
-      - name: Set Fly secrets
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: |
-          flyctl secrets set \
-            ADMIN_EMAIL="${{ github.event.client_payload.admin_email }}" \
-            ADMIN_PASSWORD="${{ github.event.client_payload.admin_password }}" \
-            SHOP_NAME="${{ github.event.client_payload.shop_name }}" \
-            SHOP_PLAN="${{ github.event.client_payload.plan }}" \
-            SHOP_LIMITS_JSON='${{ github.event.client_payload.limits_json }}' \
-            SHOP_EXPIRES_AT="${{ github.event.client_payload.expires_at }}" \
-            -a ${{ steps.payload.outputs.app_name }}
-
       - name: Deploy machine
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
@@ -48,13 +35,19 @@ jobs:
           
           echo "Deploying machine with image: $IMAGE"
           
-          # Create machine via API
+          # Create machine via API with secrets as env vars
           MACHINE_CONFIG=$(cat <<EOF
           {
             "config": {
               "image": "$IMAGE",
               "env": {
-                "NODE_ENV": "production"
+                "NODE_ENV": "production",
+                "ADMIN_EMAIL": "${{ github.event.client_payload.admin_email }}",
+                "ADMIN_PASSWORD": "${{ github.event.client_payload.admin_password }}",
+                "SHOP_NAME": "${{ github.event.client_payload.shop_name }}",
+                "SHOP_PLAN": "${{ github.event.client_payload.plan }}",
+                "SHOP_LIMITS_JSON": ${{ github.event.client_payload.limits_json }},
+                "SHOP_EXPIRES_AT": "${{ github.event.client_payload.expires_at }}"
               },
               "services": [{
                 "ports": [{
