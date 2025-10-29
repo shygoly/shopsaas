@@ -59,12 +59,10 @@ jobs:
               "services": [{
                 "ports": [{
                   "port": 443,
-                  "handlers": ["http", "tls"],
-                  "force_https": true
+                  "handlers": ["http", "tls"]
                 }, {
                   "port": 80,
-                  "handlers": ["http"],
-                  "force_https": true
+                  "handlers": ["http"]
                 }],
                 "protocol": "tcp",
                 "internal_port": 3000
