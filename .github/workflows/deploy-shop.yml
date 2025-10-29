@@ -46,7 +46,7 @@ jobs:
                 "ADMIN_PASSWORD": "${{ github.event.client_payload.admin_password }}",
                 "SHOP_NAME": "${{ github.event.client_payload.shop_name }}",
                 "SHOP_PLAN": "${{ github.event.client_payload.plan }}",
-                "SHOP_LIMITS_JSON": ${{ github.event.client_payload.limits_json }},
+                "SHOP_LIMITS_JSON": "${{ github.event.client_payload.limits_json }}",
                 "SHOP_EXPIRES_AT": "${{ github.event.client_payload.expires_at }}"
               },
               "services": [{
