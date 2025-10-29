@@ -49,7 +49,7 @@ jobs:
           
           echo "✅ Databases attached and secrets configured"
 
-      - name: Deploy with flyctl
+      - name: Deploy with flyctl machines run
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
@@ -58,20 +58,26 @@ jobs:
           
           echo "Deploying app with image: $IMAGE"
           
-          # Deploy using flyctl deploy (creates proper release and applies secrets)
-          flyctl deploy \
+          # Create and run machine using flyctl machines run
+          MACHINE_OUTPUT=$(flyctl machines run $IMAGE \
             --app $APP_NAME \
-            --image $IMAGE \
-            --strategy immediate \
-            --ha=false \
+            --port 443:3000/tcp:http:tls \
+            --port 80:3000/tcp:http \
             --vm-size shared-cpu-1x \
             --vm-memory 512 \
-            --now
+            2>&1)
           
-          echo "✅ Deployment complete"
+          echo "$MACHINE_OUTPUT"
           
-          # Get machine ID for callback
-          MACHINE_ID=$(flyctl machines list -a $APP_NAME --json | jq -r '.[0].id // empty')
+          # Extract machine ID from output
+          MACHINE_ID=$(echo "$MACHINE_OUTPUT" | grep -oP 'Machine \K[a-f0-9]+' | head -1)
+          
+          if [ -z "$MACHINE_ID" ]; then
+            # Fallback: get machine ID from list
+            MACHINE_ID=$(flyctl machines list -a $APP_NAME --json | jq -r '.[0].id // empty')
+          fi
+          
+          echo "✅ Deployment complete, machine ID: $MACHINE_ID"
           echo "machine_id=$MACHINE_ID" >> $GITHUB_OUTPUT
 
       - name: Notify shopsaas
