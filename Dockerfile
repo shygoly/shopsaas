@@ -4,6 +4,12 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
+# Install flyctl CLI for app/secrets management
+RUN apk add --no-cache curl bash && \
+    curl -L https://fly.io/install.sh | sh && \
+    mv /root/.fly/bin/flyctl /usr/local/bin/flyctl && \
+    chmod +x /usr/local/bin/flyctl
+
 # Copy package files
 COPY package*.json ./
 
@@ -23,8 +29,10 @@ ENV PORT=3000
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S shopsaas -u 1001
 
-# Change ownership of app directory
-RUN chown -R shopsaas:nodejs /app
+# Change ownership of app directory and ensure flyctl is accessible
+RUN chown -R shopsaas:nodejs /app && \
+    chmod 755 /usr/local/bin/flyctl
+
 USER shopsaas
 
 # Expose port

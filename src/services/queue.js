@@ -4,7 +4,6 @@ import { db } from '../db/index.js';
 import { shops, deployments } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { flyClient } from './fly.js';
-import { githubClient } from './github.js';
 import { deploymentMonitor } from './deployment-monitor.js';
 
 // Redis connection with error handling
@@ -74,7 +73,7 @@ class ShopCreationProcessor {
    */
   async processShopCreation(job) {
     const { shopData, deploymentId, userId } = job.data;
-    const { shop_name, slug, app_name, admin_email, admin_password } = shopData;
+    const { shop_name, slug, app_name, admin_email, admin_password, plan, limits, expires_at } = shopData;
 
     console.log(`🚀 Processing shop creation: ${app_name} (attempt ${job.attemptsMade + 1}/${job.opts.attempts})`);
     
@@ -82,109 +81,82 @@ class ShopCreationProcessor {
       // Update job progress
       await job.updateProgress(10);
 
-      // Step 1: Provision Fly app and secrets
-      console.log(`🔐 Provisioning Fly app: ${app_name}`);
-      const flyProvision = await flyClient.provisionShop(
+      // Step 1: Trigger GitHub Workflow to deploy shop
+      console.log(`🚀 Triggering GitHub Workflow for shop deployment: ${app_name}`);
+      
+      const image = process.env.EVERSHOP_IMAGE || 'registry.fly.io/evershop-fly:deployment-01K88VT3QAADMPVZT2SBX08V0R';
+      const callbackUrl = `${process.env.BASE_URL || 'https://shopsaas.fly.dev'}/api/webhooks/deployment`;
+      
+      const { githubClient } = await import('./github.js');
+      
+      const workflowPayload = {
         app_name,
         shop_name,
         admin_email,
-        admin_password
-      );
-
-      if (!flyProvision.success) {
-        throw new Error(`Fly provisioning failed: ${flyProvision.error}`);
+        admin_password,
+        plan,
+        limits_json: JSON.stringify(limits),
+        expires_at,
+        image,
+        deployment_id: deploymentId,
+        callback_url: callbackUrl,
+      };
+      
+      const dispatchResult = await githubClient.triggerDeploy(workflowPayload);
+      
+      if (!dispatchResult.success) {
+        throw new Error(`GitHub workflow trigger failed: ${dispatchResult.error}`);
       }
-
+      
+      console.log(`✅ GitHub workflow dispatched: ${dispatchResult.run_id || 'pending'}`);
+      
       await job.updateProgress(40);
-      console.log(`✅ Fly app provisioned: ${app_name}`);
-
-      // Step 2: Trigger GitHub Actions workflow
-      const ownerRepo = process.env.GH_REPO;
-      const workflow = process.env.GH_WORKFLOW || 'deploy-new-shop.yml';
       
-      if (!ownerRepo) {
-        throw new Error('GH_REPO environment variable not set');
-      }
-
-      const [owner, repo] = ownerRepo.split('/');
-      
-      console.log(`🚀 Triggering GitHub workflow: ${workflow}`);
-      const workflowResult = await githubClient.triggerWorkflow(
-        owner,
-        repo,
-        workflow,
-        'main',
-        {
-          app_name: app_name,
-          shop_name: shop_name,
-        }
-      );
-
-      if (!workflowResult.success) {
-        throw new Error(`GitHub workflow trigger failed: ${workflowResult.error}`);
-      }
-
-      await job.updateProgress(70);
-      console.log(`✅ GitHub workflow triggered successfully`);
-
-      // Step 3: Find workflow run ID and start monitoring
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for run to appear
-      
-      const recentRunResult = await githubClient.findRecentWorkflowRun(owner, repo, {
-        app_name: app_name,
-        shop_name: shop_name,
-      });
-
-      let githubRunId = null;
-      if (recentRunResult.success && recentRunResult.data) {
-        githubRunId = recentRunResult.data.id;
-        console.log(`🔍 Found GitHub run ID: ${githubRunId}`);
-      } else {
-        console.warn('Could not find recent workflow run - monitoring will be limited');
-      }
-
-      // Update deployment with GitHub run ID
+      // Update deployment with GitHub run info
       await db.update(deployments)
-        .set({
+        .set({ 
           status: 'running',
-          github_run_id: githubRunId,
+          github_run_id: dispatchResult.run_id,
           started_at: new Date(),
+          logs: JSON.stringify({ 
+            step: 'workflow_dispatched',
+            github_run_id: dispatchResult.run_id,
+            image: image,
+            timestamp: new Date().toISOString()
+          })
         })
         .where(eq(deployments.id, deploymentId));
-
-      await job.updateProgress(90);
-
-      // Step 4: Start monitoring in background
-      if (githubRunId) {
-        console.log(`📋 Starting deployment monitoring for ${app_name}`);
-        
-        // Don't await this - let it run in background
-        deploymentMonitor.startMonitoring(
-          deploymentId,
-          githubRunId,
-          app_name,
-          {
-            shop_id: shopData.shop_id,
-            shop_name,
-            user_id: userId,
-          }
-        ).catch(error => {
-          console.error(`Failed to start monitoring for deployment ${deploymentId}:`, error);
-        });
-      }
-
+      
+      console.log(`📝 Deployment delegated to GitHub Actions, monitoring...`);
+      
       await job.updateProgress(100);
       
-      console.log(`🎉 Shop creation job completed: ${app_name}`);
+      console.log(`🎉 Shop creation job queued to GitHub Actions: ${app_name}`);
       return {
         success: true,
         app_name,
-        github_run_id: githubRunId,
-        message: 'Shop creation initiated successfully',
+        github_run_id: dispatchResult.run_id,
+        message: 'Shop deployment triggered via GitHub Actions',
       };
 
     } catch (error) {
       console.error(`❌ Shop creation failed for ${app_name}:`, error.message);
+      console.error(`❌ Error stack:`, error.stack);
+      
+      // Log detailed error
+      await db.update(deployments)
+        .set({ 
+          logs: JSON.stringify({ 
+            step: 'job_failed',
+            error: error.message,
+            stack: error.stack,
+            timestamp: new Date().toISOString()
+          }),
+          status: 'failed',
+          error_message: error.message,
+          completed_at: new Date()
+        })
+        .where(eq(deployments.id, deploymentId));
       
       // Update shop and deployment status on failure
       await this.handleJobFailure(shopData.shop_id, deploymentId, error.message);
@@ -259,6 +231,7 @@ if (redisConnection && shopCreationQueue) {
     shopCreationWorker = new Worker(
       'shop-creation',
       async (job) => {
+        console.log(`🔄 Worker picked up job: ${job.id}, data:`, JSON.stringify(job.data.shopData, null, 2));
         return processor.processShopCreation(job);
       },
       {
@@ -268,10 +241,13 @@ if (redisConnection && shopCreationQueue) {
         maxStalledCount: 1,
       }
     );
+    console.log(`✅ Shop creation worker initialized (concurrency: ${processor.concurrency})`);
   } catch (error) {
     console.warn('⚠️ Worker initialization failed:', error.message);
     shopCreationWorker = null;
   }
+} else {
+  console.warn('⚠️ Worker NOT initialized - Redis or Queue unavailable');
 }
 
 // Event handlers (only if worker is available)

@@ -1,0 +1,113 @@
+name: Deploy EverShop Shop
+
+on:
+  repository_dispatch:
+    types: [deploy-shop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Extract payload
+        id: payload
+        run: |
+          echo "app_name=${{ github.event.client_payload.app_name }}" >> $GITHUB_OUTPUT
+          echo "shop_name=${{ github.event.client_payload.shop_name }}" >> $GITHUB_OUTPUT
+          echo "admin_email=${{ github.event.client_payload.admin_email }}" >> $GITHUB_OUTPUT
+          echo "deployment_id=${{ github.event.client_payload.deployment_id }}" >> $GITHUB_OUTPUT
+
+      - name: Create Fly app
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "Creating Fly app: ${{ steps.payload.outputs.app_name }}"
+          flyctl apps create ${{ steps.payload.outputs.app_name }} --org chada || echo "App may already exist"
+
+      - name: Set Fly secrets
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl secrets set \
+            ADMIN_EMAIL="${{ github.event.client_payload.admin_email }}" \
+            ADMIN_PASSWORD="${{ github.event.client_payload.admin_password }}" \
+            SHOP_NAME="${{ github.event.client_payload.shop_name }}" \
+            SHOP_PLAN="${{ github.event.client_payload.plan }}" \
+            SHOP_LIMITS_JSON='${{ github.event.client_payload.limits_json }}' \
+            SHOP_EXPIRES_AT="${{ github.event.client_payload.expires_at }}" \
+            -a ${{ steps.payload.outputs.app_name }}
+
+      - name: Deploy machine
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          APP_NAME="${{ steps.payload.outputs.app_name }}"
+          IMAGE="${{ github.event.client_payload.image || 'registry.fly.io/evershop-fly:deployment-01K88VT3QAADMPVZT2SBX08V0R' }}"
+          
+          echo "Deploying machine with image: $IMAGE"
+          
+          # Create machine via API
+          MACHINE_CONFIG=$(cat <<EOF
+          {
+            "config": {
+              "image": "$IMAGE",
+              "env": {
+                "NODE_ENV": "production"
+              },
+              "services": [{
+                "ports": [{
+                  "port": 443,
+                  "handlers": ["http", "tls"],
+                  "force_https": true
+                }, {
+                  "port": 80,
+                  "handlers": ["http"],
+                  "force_https": true
+                }],
+                "protocol": "tcp",
+                "internal_port": 3000
+              }],
+              "guest": {
+                "cpu_kind": "shared",
+                "cpus": 1,
+                "memory_mb": 512
+              }
+            }
+          }
+          EOF
+          )
+          
+          curl -X POST "https://api.machines.dev/v1/apps/$APP_NAME/machines" \
+            -H "Authorization: Bearer $FLY_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$MACHINE_CONFIG" \
+            -o /tmp/machine-response.json
+          
+          cat /tmp/machine-response.json
+          
+          MACHINE_ID=$(jq -r '.id // empty' /tmp/machine-response.json)
+          
+          if [ -z "$MACHINE_ID" ]; then
+            echo "❌ Failed to create machine"
+            exit 1
+          fi
+          
+          echo "✅ Machine created: $MACHINE_ID"
+          echo "machine_id=$MACHINE_ID" >> $GITHUB_OUTPUT
+
+      - name: Notify shopsaas
+        if: always()
+        env:
+          SHOPSAAS_WEBHOOK_SECRET: ${{ secrets.SHOPSAAS_WEBHOOK_SECRET }}
+        run: |
+          STATUS="${{ job.status }}"
+          APP_NAME="${{ steps.payload.outputs.app_name }}"
+          DEPLOYMENT_ID="${{ steps.payload.outputs.deployment_id }}"
+          
+          curl -X POST "${{ github.event.client_payload.callback_url }}" \
+            -H "Authorization: Bearer $SHOPSAAS_WEBHOOK_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "{\"app_name\":\"$APP_NAME\",\"deployment_id\":$DEPLOYMENT_ID,\"status\":\"$STATUS\",\"github_run_id\":\"${{ github.run_id }}\",\"machine_id\":\"${{ steps.deploy.outputs.machine_id }}\"}"
+

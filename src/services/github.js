@@ -273,6 +273,52 @@ class GitHubAPIClient {
   async sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
+
+  /**
+   * Trigger shop deployment via repository_dispatch
+   * @param {Object} payload - Shop deployment payload
+   * @returns {Promise<Object>} Dispatch response
+   */
+  async triggerDeploy(payload) {
+    try {
+      const owner = process.env.GH_REPO?.split('/')[0] || 'sgl1226';
+      const repo = process.env.GH_REPO?.split('/')[1] || 'shopsaas';
+      
+      console.log(`Dispatching deploy-shop event to ${owner}/${repo}`);
+      
+      const response = await this.client.post(
+        `/repos/${owner}/${repo}/dispatches`,
+        {
+          event_type: 'deploy-shop',
+          client_payload: payload,
+        }
+      );
+      
+      console.log(`✅ Repository dispatch sent: ${response.status}`);
+      
+      // repository_dispatch returns 204 on success, no run_id immediately available
+      // We need to poll for the run that just started
+      await this.sleep(3000); // Wait 3s for workflow to start
+      
+      const recentRun = await this.findRecentWorkflowRun(owner, repo, {
+        app_name: payload.app_name,
+        shop_name: payload.shop_name,
+      });
+      
+      return { 
+        success: true, 
+        run_id: recentRun.data?.id,
+        status: response.status 
+      };
+    } catch (error) {
+      console.error(`Failed to trigger deploy:`, error.response?.data || error.message);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message,
+        status: error.response?.status,
+      };
+    }
+  }
 }
 
 // Export singleton instance
