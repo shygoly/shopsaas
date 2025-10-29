@@ -49,67 +49,30 @@ jobs:
           
           echo "✅ Databases attached and secrets configured"
 
-      - name: Deploy machine
+      - name: Deploy with flyctl
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           APP_NAME="${{ steps.payload.outputs.app_name }}"
           IMAGE="${{ github.event.client_payload.image || 'registry.fly.io/evershop-fly:deployment-01K88VT3QAADMPVZT2SBX08V0R' }}"
           
-          echo "Deploying machine with image: $IMAGE"
+          echo "Deploying app with image: $IMAGE"
           
-          # Create machine via API (env vars and secrets come from app-level secrets set above)
-          MACHINE_CONFIG=$(cat <<EOF
-          {
-            "config": {
-              "image": "$IMAGE",
-              "services": [{
-                "ports": [{
-                  "port": 443,
-                  "handlers": ["http", "tls"]
-                }, {
-                  "port": 80,
-                  "handlers": ["http"]
-                }],
-                "protocol": "tcp",
-                "internal_port": 3000
-              }],
-              "guest": {
-                "cpu_kind": "shared",
-                "cpus": 1,
-                "memory_mb": 512
-              }
-            }
-          }
-          EOF
-          )
+          # Deploy using flyctl deploy (creates proper release and applies secrets)
+          flyctl deploy \
+            --app $APP_NAME \
+            --image $IMAGE \
+            --strategy immediate \
+            --ha=false \
+            --vm-size shared-cpu-1x \
+            --vm-memory 512 \
+            --now
           
-          curl -X POST "https://api.machines.dev/v1/apps/$APP_NAME/machines" \
-            -H "Authorization: Bearer $FLY_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "$MACHINE_CONFIG" \
-            -o /tmp/machine-response.json
+          echo "✅ Deployment complete"
           
-          cat /tmp/machine-response.json
-          
-          MACHINE_ID=$(jq -r '.id // empty' /tmp/machine-response.json)
-          
-          if [ -z "$MACHINE_ID" ]; then
-            echo "❌ Failed to create machine"
-            echo "Response:"
-            cat /tmp/machine-response.json
-            exit 1
-          fi
-          
-          echo "✅ Machine created: $MACHINE_ID"
+          # Get machine ID for callback
+          MACHINE_ID=$(flyctl machines list -a $APP_NAME --json | jq -r '.[0].id // empty')
           echo "machine_id=$MACHINE_ID" >> $GITHUB_OUTPUT
-          
-          # Start the machine
-          echo "🚀 Starting machine $MACHINE_ID..."
-          curl -X POST "https://api.machines.dev/v1/apps/$APP_NAME/machines/$MACHINE_ID/start" \
-            -H "Authorization: Bearer $FLY_API_TOKEN"
-          
-          echo "✅ Machine start command sent"
 
       - name: Notify shopsaas
         if: always()
