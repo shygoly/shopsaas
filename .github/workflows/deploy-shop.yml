@@ -35,6 +35,9 @@ jobs:
           
           echo "Deploying machine with image: $IMAGE"
           
+          # Escape limits_json for JSON
+          LIMITS_JSON_ESCAPED=$(echo '${{ github.event.client_payload.limits_json }}' | sed 's/"/\\"/g')
+          
           # Create machine via API with secrets as env vars
           MACHINE_CONFIG=$(cat <<EOF
           {
@@ -46,7 +49,7 @@ jobs:
                 "ADMIN_PASSWORD": "${{ github.event.client_payload.admin_password }}",
                 "SHOP_NAME": "${{ github.event.client_payload.shop_name }}",
                 "SHOP_PLAN": "${{ github.event.client_payload.plan }}",
-                "SHOP_LIMITS_JSON": "${{ github.event.client_payload.limits_json }}",
+                "SHOP_LIMITS_JSON": "$LIMITS_JSON_ESCAPED",
                 "SHOP_EXPIRES_AT": "${{ github.event.client_payload.expires_at }}"
               },
               "services": [{
