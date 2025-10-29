@@ -91,6 +91,8 @@ jobs:
           
           if [ -z "$MACHINE_ID" ]; then
             echo "❌ Failed to create machine"
+            echo "Response:"
+            cat /tmp/machine-response.json
             exit 1
           fi
           
