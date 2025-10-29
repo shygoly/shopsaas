@@ -35,12 +35,10 @@ jobs:
           echo "📦 Attaching PostgreSQL database..."
           flyctl postgres attach evershop-db -a $APP_NAME --yes || echo "⚠️ PostgreSQL attach failed"
           
-          echo "📦 Attaching Redis..."
-          flyctl redis attach shopsaas-redis -a $APP_NAME --yes || echo "⚠️ Redis attach failed"
-          
-          echo "🔐 Setting application secrets..."
+          echo "🔐 Setting application secrets (including Redis URL)..."
           flyctl secrets set \
             NODE_ENV="production" \
+            REDIS_URL="redis://shopsaas-redis.flycast:6379" \
             ADMIN_EMAIL="${{ github.event.client_payload.admin_email }}" \
             ADMIN_PASSWORD="${{ github.event.client_payload.admin_password }}" \
             SHOP_NAME="${{ github.event.client_payload.shop_name }}" \
