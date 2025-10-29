@@ -96,6 +96,13 @@ jobs:
           
           echo "✅ Machine created: $MACHINE_ID"
           echo "machine_id=$MACHINE_ID" >> $GITHUB_OUTPUT
+          
+          # Start the machine
+          echo "🚀 Starting machine $MACHINE_ID..."
+          curl -X POST "https://api.machines.dev/v1/apps/$APP_NAME/machines/$MACHINE_ID/start" \
+            -H "Authorization: Bearer $FLY_API_TOKEN"
+          
+          echo "✅ Machine start command sent"
 
       - name: Notify shopsaas
         if: always()

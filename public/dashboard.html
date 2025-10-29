@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopSaaS Dashboard</title>
+  <style>
+    body { font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif; background:#f7fafc; margin:0; }
+    header { background:#4f46e5; color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
+    .container { max-width: 960px; margin: 24px auto; padding: 0 16px; }
+    h1 { margin:0; font-size:20px; }
+    .shops { margin-top: 16px; }
+    .shop { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .shop h3 { margin:0 0 6px 0; font-size:16px; }
+    .muted { color:#64748b; font-size:13px; }
+    .actions button { margin-left:8px; padding:8px 10px; border:1px solid #e2e8f0; background:#fff; border-radius:6px; cursor:pointer; }
+    .actions button.primary { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+    form.inline { display:flex; gap:8px; align-items:center; margin-top:8px; }
+    input[type="text"] { padding:8px; border:1px solid #e2e8f0; border-radius:6px; }
+    .create { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:16px; margin-top:20px; }
+    label { font-size:13px; color:#334155; display:block; margin-bottom:6px; }
+    .row { display:flex; gap:12px; }
+    .row > div { flex:1; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; margin-left:8px; }
+    .badge.success { background:#d4edda; color:#155724; }
+    .actions button:disabled { opacity:0.5; cursor:not-allowed; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Your Shops</h1>
+    <div>
+      <span id="userEmail" class="muted"></span>
+      <button onclick="logout()" class="actions button">Logout</button>
+    </div>
+  </header>
+  <div class="container">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+      <div>
+        <div class="muted">Credits</div>
+        <div id="credits" style="font-weight:600;">-</div>
+      </div>
+      <div>
+        <button class="actions button" onclick="buyCredits(1000)">Buy 1000 credits (¥100)</button>
+      </div>
+    </div>
+
+    <div id="shops" class="shops"></div>
+
+    <div class="create">
+      <h3>Create New Shop</h3>
+      <div class="row">
+        <div>
+          <label for="shop_name">Shop Name</label>
+          <input id="shop_name" type="text" placeholder="My Awesome Store" />
+        </div>
+        <div>
+          <label for="admin_email">Admin Email</label>
+          <input id="admin_email" type="text" placeholder="admin@yourstore.com" />
+        </div>
+        <div>
+          <label for="admin_password">Admin Password</label>
+          <input id="admin_password" type="text" placeholder="Strong password" />
+        </div>
+      </div>
+      <div style="margin-top:12px;"><button class="actions button primary" onclick="createShop()">Create Shop</button></div>
+    </div>
+  </div>
+
+  <script>
+    async function ensureAuth() {
+      const res = await fetch('/api/user');
+      const data = await res.json();
+      if (!data.user) { window.location.href = '/'; return; }
+      document.getElementById('userEmail').textContent = data.user.email;
+      // fetch billing
+      try {
+        const b = await fetch('/api/billing/summary').then(r=>r.json());
+        document.getElementById('credits').textContent = `${b.credits} credits${b.first_shop_redeemed? ' (first shop used)' : ' (first shop free available)'}`;
+      } catch {}
+    }
+
+    async function loadShops() {
+      const res = await fetch('/api/shops');
+      const data = await res.json();
+      const list = document.getElementById('shops');
+      if (!data.shops || data.shops.length === 0) {
+        list.innerHTML = '<p class="muted">No shops yet.</p>';
+        return;
+      }
+      
+      // Get user credits for button state
+      const userCredits = data.credits || 0;
+      
+      list.innerHTML = data.shops.map(s => {
+        const chatbotBadge = s.chatbot_enabled 
+          ? `<span class="badge success">✅ 智能客服已启用</span>`
+          : '';
+        
+        const chatbotButton = s.chatbot_enabled
+          ? `<button onclick="viewChatbotConfig(${s.id})">智能客服配置</button>`
+          : `<button class="primary" onclick="enableChatbot(${s.id})" ${userCredits < 50 ? 'disabled title="积分不足（需要50积分）"' : ''}>启用智能客服 (-50积分)</button>`;
+        
+        return `
+          <div class="shop" data-id="${s.id}">
+            <div>
+              <h3>${s.shop_name} ${chatbotBadge}</h3>
+              <div class="muted">${s.slug} • Status: ${s.status} • <a href="https://${s.app_name}.fly.dev" target="_blank">${s.app_name}.fly.dev</a></div>
+              <form class="inline" onsubmit="return saveShop(${s.id}, this)">
+                <input type="text" name="shop_name" placeholder="Rename shop" />
+                <input type="text" name="domain" placeholder="Set custom domain (optional)" />
+                <button class="actions button">Save</button>
+              </form>
+            </div>
+            <div class="actions">
+              <button onclick="openShop('${s.app_name}')">Open</button>
+              ${chatbotButton}
+              <button onclick="deleteShop(${s.id})">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openShop(app) { window.open(`https://${app}.fly.dev`, '_blank'); }
+
+    async function saveShop(id, form) {
+      const fd = new FormData(form);
+      const body = {};
+      for (const [k,v] of fd.entries()) if (v) body[k] = v;
+      if (Object.keys(body).length === 0) return false;
+      const res = await fetch(`/api/shops/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+      if (!res.ok) { alert('Update failed'); return false; }
+      await loadShops();
+      form.reset();
+      return false;
+    }
+
+    async function buyCredits(amount) {
+      const res = await fetch('/api/billing/grant', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ amount }) });
+      if (!res.ok) { alert('Purchase failed (placeholder)'); return; }
+      await ensureAuth();
+      alert('Credits purchased (placeholder).');
+    }
+
+    async function deleteShop(id) {
+      if (!confirm('Delete this shop? (soft delete)')) return;
+      const res = await fetch(`/api/shops/${id}`, { method:'DELETE' });
+      if (!res.ok) { alert('Delete failed'); return; }
+      await loadShops();
+    }
+
+    async function createShop() {
+      const shop_name = document.getElementById('shop_name').value.trim();
+      const admin_email = document.getElementById('admin_email').value.trim();
+      const admin_password = document.getElementById('admin_password').value.trim();
+      if (!shop_name || !admin_email || !admin_password) { alert('Please fill all fields'); return; }
+      const res = await fetch('/api/shops', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ shop_name, admin_email, admin_password })});
+      if (!res.ok) { const d = await res.json().catch(()=>({})); alert('Create failed: ' + (d.error || res.status)); return; }
+      document.getElementById('shop_name').value = '';
+      document.getElementById('admin_email').value = '';
+      document.getElementById('admin_password').value = '';
+      await loadShops();
+      alert('Creation started. It may take a few minutes.');
+    }
+
+    async function logout() { await fetch('/auth/logout', { method:'POST' }); window.location.href = '/'; }
+
+    async function enableChatbot(shopId) {
+      if (!confirm('启用智能客服将扣除 50 积分。\n\n功能包括：\n• AI 对话助手\n• 产品/订单智能查询\n• 自动客服回复\n• 数据同步管理\n\n确认继续？')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/shops/${shopId}/chatbot/enable`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          alert(`✅ 智能客服启用成功！\n\nBot ID: ${data.botId || '创建中...'}\n剩余积分: ${data.creditsRemaining}\n\n页面将刷新...`);
+          await loadShops();
+          await ensureAuth(); // Refresh credits display
+        } else {
+          if (data.error === 'insufficient_credits') {
+            alert(`❌ 积分不足\n\n需要: ${data.need} 积分\n当前: ${data.have} 积分\n\n请先充值！`);
+          } else {
+            alert(`❌ 启用失败: ${data.error}\n\n${data.message || ''}`);
+          }
+        }
+      } catch (error) {
+        alert(`❌ 请求失败: ${error.message}`);
+      }
+    }
+
+    async function viewChatbotConfig(shopId) {
+      try {
+        const res = await fetch(`/api/shops/${shopId}/sso/issue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: 'admin' })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          const chatbotBaseUrl = 'http://localhost:3000'; // TODO: from env
+          const chatbotUrl = `${chatbotBaseUrl}/admin?token=${data.token}&shopId=shop-${shopId}`;
+          window.open(chatbotUrl, '_blank');
+        } else {
+          alert(`❌ 无法获取配置: ${data.error}`);
+        }
+      } catch (error) {
+        alert(`❌ 请求失败: ${error.message}`);
+      }
+    }
+
+    (async function init(){ await ensureAuth(); await loadShops(); })();
+  </script>
+</body>
+</html>

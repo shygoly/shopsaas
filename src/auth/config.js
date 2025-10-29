@@ -25,7 +25,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback'
+    callbackURL: `${process.env.BASE_URL || ''}/auth/google/callback`,
+    proxy: true
   }, async (accessToken, refreshToken, profile, done) => {
     try {
       // Check if OAuth account exists
@@ -63,6 +64,8 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
           name: profile.displayName,
           avatar_url: profile.photos?.[0]?.value,
           email_verified: true, // Google accounts are pre-verified
+          credits: 0,
+          first_shop_redeemed: false,
         }).returning();
         user = newUser;
       }
@@ -90,7 +93,8 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
   passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID,
     clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    callbackURL: '/auth/github/callback'
+    callbackURL: `${process.env.BASE_URL || ''}/auth/github/callback`,
+    proxy: true
   }, async (accessToken, refreshToken, profile, done) => {
     try {
       // Check if OAuth account exists
@@ -128,6 +132,8 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
           name: profile.displayName || profile.username,
           avatar_url: profile.photos?.[0]?.value,
           email_verified: true, // GitHub accounts are pre-verified
+          credits: 0,
+          first_shop_redeemed: false,
         }).returning();
         user = newUser;
       }

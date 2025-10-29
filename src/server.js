@@ -8,19 +8,29 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import axios from 'axios';
 import slugify from 'slugify';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 import { testConnection } from './db/index.js';
 import passport from './auth/config.js';
 import { sendMagicLink, verifyEmailToken } from './auth/email.js';
 import { db } from './db/index.js';
-import { users, shops, deployments, audit_logs } from './db/schema.js';
+import { users, shops, deployments, audit_logs, subscriptions, shop_secrets, credit_transactions } from './db/schema.js';
 import { eq, and, desc } from 'drizzle-orm';
 import { flyClient } from './services/fly.js';
 import { githubClient } from './services/github.js';
 import { deploymentMonitor } from './services/deployment-monitor.js';
 import { QueueManager, closeQueue } from './services/queue.js';
+import * as creditService from './services/credit.service.js';
+import * as chatbotIntegration from './services/chatbot-integration.service.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Trust Fly.io proxy headers for correct protocol/host in OAuth and rate limiting (one hop via Fly proxy)
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet({
@@ -48,6 +58,11 @@ app.use(morgan('combined'));
 // Static files
 app.use(express.static('public'));
 
+// Dashboard page (client-side will check auth and redirect if needed)
+app.get('/dashboard', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+});
+
 // Session configuration
 const PgSession = pgSession(session);
 app.use(session({
@@ -69,8 +84,12 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Test database connection on startup
+// Test database connection
 await testConnection();
+
+// Ensure DB bootstrap (create missing tables/columns)
+import { ensureDatabaseBootstrap } from './db/bootstrap.js';
+ensureDatabaseBootstrap().catch((e) => console.error('DB bootstrap error:', e));
 
 // Utility functions
 function logAuditEvent(userId, action, resourceType, resourceId, details, req) {
@@ -222,20 +241,35 @@ app.post('/api/admin/queue/resume', requireAuth, async (req, res) => {
 
 // Auth routes
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-app.get('/auth/google/callback', 
-  passport.authenticate('google', { failureRedirect: '/login' }),
-  (req, res) => {
-    logAuditEvent(req.user.id, 'login', 'user', req.user.id.toString(), { method: 'google' }, req);
-    res.redirect(process.env.FRONTEND_URL || '/');
-  }
-);
+app.get('/auth/google/callback', (req, res, next) => {
+  passport.authenticate('google', async (err, user, info) => {
+    if (err) {
+      console.error('Google OAuth error:', err, info);
+      return res.status(500).send('OAuth error');
+    }
+    if (!user) {
+      console.error('Google OAuth failed, no user returned', info);
+      return res.redirect('/?oauth=google_failed');
+    }
+    req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        console.error('Login session error:', loginErr);
+        return res.status(500).send('Login failed');
+      }
+      logAuditEvent(user.id, 'login', 'user', String(user.id), { method: 'google' }, req);
+      const base = process.env.FRONTEND_URL || '';
+      return res.redirect(`${base}/dashboard`);
+    });
+  })(req, res, next);
+});
 
 app.get('/auth/github', passport.authenticate('github', { scope: ['user:email'] }));
 app.get('/auth/github/callback',
   passport.authenticate('github', { failureRedirect: '/login' }),
   (req, res) => {
     logAuditEvent(req.user.id, 'login', 'user', req.user.id.toString(), { method: 'github' }, req);
-    res.redirect(process.env.FRONTEND_URL || '/');
+    const base = process.env.FRONTEND_URL || '';
+    res.redirect(`${base}/dashboard`);
   }
 );
 
@@ -296,13 +330,52 @@ app.post('/auth/logout', (req, res) => {
 });
 
 // Get current user
-app.get('/api/user', (req, res) => {
+app.get('/api/user', async (req, res) => {
   if (!req.user) {
     return res.json({ user: null });
   }
-  
-  const { password_hash, ...userWithoutPassword } = req.user;
-  res.json({ user: userWithoutPassword });
+  // include credits info
+  try {
+    const me = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+    const u = me[0];
+    if (!u) return res.json({ user: null });
+    const { password_hash, ...userWithoutPassword } = u;
+    return res.json({ user: userWithoutPassword });
+  } catch {
+    const { password_hash, ...userWithoutPassword } = req.user;
+    return res.json({ user: userWithoutPassword });
+  }
+});
+
+// Billing summary
+app.get('/api/billing/summary', requireAuth, async (req, res) => {
+  try {
+    const me = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+    const u = me[0];
+    const priceCNYPer1000 = 100;
+    res.json({
+      credits: u?.credits || 0,
+      first_shop_redeemed: !!u?.first_shop_redeemed,
+      pricing: { create_empty_shop_credits: 1000, price_cny: priceCNYPer1000 },
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to load billing' });
+  }
+});
+
+// Grant credits (for testing/admin) - TODO: restrict to admins later
+app.post('/api/billing/grant', requireAuth, async (req, res) => {
+  try {
+    const amount = parseInt(req.body?.amount || '0', 10);
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'invalid_amount' });
+    await db.update(users)
+      .set({ credits: (req.user.credits || 0) + amount, updated_at: new Date() })
+      .where(eq(users.id, req.user.id));
+    logAuditEvent(req.user.id, 'credits_granted', 'user', String(req.user.id), { amount }, req);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'grant_failed' });
+  }
 });
 
 // Webhook endpoint for GitHub Actions callbacks
@@ -396,15 +469,36 @@ app.post('/api/shops', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'shop_name, admin_email, admin_password are required' });
     }
 
-    const ownerRepo = process.env.GH_REPO; // e.g. "shygoly/evershop-fly"
-    const workflow = process.env.GH_WORKFLOW || 'deploy-new-shop.yml';
-    const ghToken = process.env.GITHUB_TOKEN; // repo scope
-    if (!ownerRepo || !ghToken) {
-      return res.status(501).json({ error: 'Server not configured: GH_REPO or GITHUB_TOKEN missing' });
+    // Check required Fly.io configuration
+    const flyToken = process.env.FLY_API_TOKEN;
+    if (!flyToken) {
+      return res.status(501).json({ error: 'Server not configured: FLY_API_TOKEN missing' });
     }
 
     const slug = makeSlug(shop_name);
     const appName = `evershop-fly-${slug}`;
+
+    // Billing constants
+    const SHOP_COST_CREDITS = parseInt(process.env.SHOP_COST_CREDITS || '1000', 10);
+    const DEFAULT_LIMITS = { max_products: 100, max_orders_per_month: 1000 };
+
+    // Load user billing state
+    const me = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+    const currentUser = me[0];
+    if (!currentUser) return res.status(401).json({ error: 'Authentication required' });
+
+    // Check first shop free
+    let isFree = false;
+    let willDeduct = 0;
+    if (!currentUser.first_shop_redeemed) {
+      isFree = true;
+    } else {
+      // Need credits
+      if ((currentUser.credits || 0) < SHOP_COST_CREDITS) {
+        return res.status(402).json({ error: 'insufficient_credits', need: SHOP_COST_CREDITS, have: currentUser.credits || 0 });
+      }
+      willDeduct = SHOP_COST_CREDITS;
+    }
 
     // Check if shop name/slug is already taken
     const existingShop = await db.select().from(shops).where(
@@ -415,6 +509,10 @@ app.post('/api/shops', requireAuth, async (req, res) => {
       return res.status(409).json({ error: 'Shop name already taken', slug });
     }
 
+    // Determine plan/limits/expiry
+    const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
+    const plan = isFree ? 'free-first-year' : 'standard';
+
     // Create shop record in database
     const newShop = await db.insert(shops).values({
       user_id: req.user.id,
@@ -423,6 +521,9 @@ app.post('/api/shops', requireAuth, async (req, res) => {
       app_name: appName,
       admin_email,
       status: 'creating',
+      plan,
+      config: JSON.stringify({ limits: DEFAULT_LIMITS }),
+      expires_at: expiresAt,
     }).returning();
 
     const shop = newShop[0];
@@ -433,7 +534,22 @@ app.post('/api/shops', requireAuth, async (req, res) => {
       status: 'queued',
     }).returning();
 
+    // Deduct credits or mark first shop redeemed before invoking provisioning
+    let deducted = false;
     try {
+      if (willDeduct > 0) {
+        await db.update(users)
+          .set({ credits: (currentUser.credits || 0) - willDeduct, updated_at: new Date() })
+          .where(eq(users.id, currentUser.id));
+        deducted = true;
+        logAuditEvent(currentUser.id, 'credits_deducted', 'user', String(currentUser.id), { amount: willDeduct, reason: 'create_shop', shop_id: shop?.id }, req);
+      } else if (isFree && !currentUser.first_shop_redeemed) {
+        await db.update(users)
+          .set({ first_shop_redeemed: true, updated_at: new Date() })
+          .where(eq(users.id, currentUser.id));
+        logAuditEvent(currentUser.id, 'first_shop_redeemed', 'user', String(currentUser.id), { shop_id: shop?.id }, req);
+      }
+
       const shopData = {
         shop_id: shop.id,
         shop_name,
@@ -441,9 +557,13 @@ app.post('/api/shops', requireAuth, async (req, res) => {
         app_name: appName,
         admin_email,
         admin_password,
+        plan,
+        limits: DEFAULT_LIMITS,
+        expires_at: expiresAt.toISOString(),
       };
 
       // Try to use queue system first, fallback to direct processing
+      let queuedJobId = null;
       try {
         console.log(`📋 Adding shop creation to queue: ${appName}`);
         const job = await QueueManager.addShopCreationJob(
@@ -453,6 +573,7 @@ app.post('/api/shops', requireAuth, async (req, res) => {
         );
 
         console.log(`✅ Shop creation job queued: ${job.id}`);
+        queuedJobId = job.id;
         
         // Update deployment with job ID for tracking
         await db.update(deployments)
@@ -486,15 +607,16 @@ app.post('/api/shops', requireAuth, async (req, res) => {
         'shop_created', 
         'shop', 
         shop.id.toString(),
-        { shop_name, app_name: appName, slug, job_id: job.id },
+        { shop_name, app_name: appName, slug, job_id: queuedJobId },
         req
       );
 
       // Determine response based on processing mode
-      const logs = JSON.parse(await db.select({ logs: deployments.logs })
+      const rawLogs = await db.select({ logs: deployments.logs })
         .from(deployments)
         .where(eq(deployments.id, newDeployment[0].id))
-        .then(results => results[0]?.logs || '{}'));
+        .then(results => results[0]?.logs || {});
+      const logs = typeof rawLogs === 'string' ? JSON.parse(rawLogs || '{}') : (rawLogs || {});
       
       if (logs.processing_mode === 'queued') {
         return res.status(202).json({
@@ -518,8 +640,18 @@ app.post('/api/shops', requireAuth, async (req, res) => {
           message: 'Shop creation request received. Queue system currently unavailable - processing will begin when system is restored.'
         });
       }
-    } catch (ghError) {
-      // Update shop and deployment status on GitHub API failure
+    } catch (deployError) {
+      // Refund credits if deducted
+      try {
+        if (deducted && willDeduct > 0) {
+          await db.update(users)
+            .set({ credits: (currentUser.credits || 0), updated_at: new Date() })
+            .where(eq(users.id, currentUser.id));
+          logAuditEvent(currentUser.id, 'credits_refund', 'user', String(currentUser.id), { amount: willDeduct, reason: 'provision_failed', shop_id: shop?.id }, req);
+        }
+      } catch {}
+
+      // Update shop and deployment status on deployment failure
       await db.update(shops)
         .set({ status: 'failed' })
         .where(eq(shops.id, shop.id));
@@ -527,12 +659,12 @@ app.post('/api/shops', requireAuth, async (req, res) => {
       await db.update(deployments)
         .set({ 
           status: 'failed',
-          error_message: ghError?.response?.data?.message || ghError.message,
+          error_message: deployError?.response?.data?.message || deployError.message,
           completed_at: new Date()
         })
         .where(eq(deployments.id, newDeployment[0].id));
       
-      throw ghError;
+      throw deployError;
     }
   } catch (e) {
     console.error('provision error:', e?.response?.data || e.message || e);
@@ -551,6 +683,9 @@ app.get('/api/shops', requireAuth, async (req, res) => {
         app_name: shops.app_name,
         domain: shops.domain,
         status: shops.status,
+        chatbot_enabled: shops.chatbot_enabled,
+        chatbot_bot_id: shops.chatbot_bot_id,
+        chatbot_enabled_at: shops.chatbot_enabled_at,
         created_at: shops.created_at,
         updated_at: shops.updated_at,
       })
@@ -558,7 +693,10 @@ app.get('/api/shops', requireAuth, async (req, res) => {
       .where(eq(shops.user_id, req.user.id))
       .orderBy(desc(shops.created_at));
 
-    res.json({ shops: userShops });
+    res.json({ 
+      shops: userShops,
+      credits: req.user.credits || 0, // Include user credits for UI
+    });
   } catch (error) {
     console.error('Failed to fetch shops:', error);
     res.status(500).json({ error: 'Failed to fetch shops' });
@@ -614,6 +752,52 @@ app.get('/api/shops/:id/status', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Failed to fetch shop status:', error);
     res.status(500).json({ error: 'Failed to fetch shop status' });
+  }
+});
+
+// Update shop (name/domain)
+app.patch('/api/shops/:id', requireAuth, async (req, res) => {
+  try {
+    const shopId = parseInt(req.params.id);
+    const { shop_name, domain } = req.body;
+
+    const owned = await db.select().from(shops)
+      .where(and(eq(shops.id, shopId), eq(shops.user_id, req.user.id)))
+      .limit(1);
+    if (owned.length === 0) return res.status(404).json({ error: 'Shop not found' });
+
+    await db.update(shops)
+      .set({
+        ...(shop_name ? { shop_name } : {}),
+        ...(domain ? { domain } : {}),
+        updated_at: new Date(),
+      })
+      .where(eq(shops.id, shopId));
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Update shop error:', e);
+    res.status(500).json({ error: 'Failed to update shop' });
+  }
+});
+
+// Delete shop (soft delete)
+app.delete('/api/shops/:id', requireAuth, async (req, res) => {
+  try {
+    const shopId = parseInt(req.params.id);
+    const owned = await db.select().from(shops)
+      .where(and(eq(shops.id, shopId), eq(shops.user_id, req.user.id)))
+      .limit(1);
+    if (owned.length === 0) return res.status(404).json({ error: 'Shop not found' });
+
+    await db.update(shops)
+      .set({ status: 'deleted', updated_at: new Date() })
+      .where(eq(shops.id, shopId));
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Delete shop error:', e);
+    res.status(500).json({ error: 'Failed to delete shop' });
   }
 });
 
@@ -894,6 +1078,259 @@ app.post('/auth/resend-verification', async (req, res) => {
 });
 
 const port = process.env.PORT || 3000;
+// ===== Queue Debugging Routes =====
+
+// Get deployment and job details for debugging
+app.get('/api/admin/deployments/:id', requireAuth, async (req, res) => {
+  try {
+    const deploymentId = parseInt(req.params.id, 10);
+    
+    const deployment = await db.select()
+      .from(deployments)
+      .where(eq(deployments.id, deploymentId))
+      .limit(1);
+    
+    if (deployment.length === 0) {
+      return res.status(404).json({ error: 'Deployment not found' });
+    }
+    
+    // Get associated shop
+    const shop = await db.select()
+      .from(shops)
+      .where(eq(shops.id, deployment[0].shop_id))
+      .limit(1);
+    
+    // Try to get BullMQ job if available
+    let jobStatus = null;
+    try {
+      const logs = typeof deployment[0].logs === 'string' ? JSON.parse(deployment[0].logs) : deployment[0].logs;
+      if (logs?.job_id) {
+        const job = await QueueManager.getJob(logs.job_id);
+        if (job) {
+          jobStatus = {
+            id: job.id,
+            state: await job.getState(),
+            progress: job.progress,
+            attemptsMade: job.attemptsMade,
+            failedReason: job.failedReason,
+            processedOn: job.processedOn,
+            finishedOn: job.finishedOn,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch job status:', e.message);
+    }
+    
+    res.json({
+      deployment: deployment[0],
+      shop: shop[0] || null,
+      job: jobStatus,
+    });
+  } catch (error) {
+    console.error('Failed to fetch deployment details:', error);
+    res.status(500).json({ error: 'Failed to fetch deployment' });
+  }
+});
+
+// ===== Chatbot Integration Routes =====
+
+// Enable chatbot for a shop
+app.post('/api/shops/:id/chatbot/enable', requireAuth, async (req, res) => {
+  try {
+    const shopId = parseInt(req.params.id, 10);
+    const { botName } = req.body || {};
+    
+    // Get shop and verify ownership
+    const shopResult = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
+    const shop = shopResult[0];
+    
+    if (!shop) {
+      return res.status(404).json({ error: 'Shop not found' });
+    }
+    
+    if (shop.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    if (shop.chatbot_enabled) {
+      return res.status(409).json({ error: 'Chatbot already enabled for this shop' });
+    }
+    
+    // Check credits
+    const costCredits = parseInt(process.env.CREDIT_CHATBOT_ENABLEMENT || '50', 10);
+    const currentBalance = req.user.credits || 0;
+    
+    if (currentBalance < costCredits) {
+      return res.status(402).json({ 
+        error: 'insufficient_credits', 
+        need: costCredits, 
+        have: currentBalance 
+      });
+    }
+    
+    try {
+      // Deduct credits first (with transaction)
+      const newBalance = await creditService.deductCredits(
+        req.user.id, 
+        costCredits, 
+        'chatbot_enablement', 
+        shopId
+      );
+      
+      // Register with chatbot-node
+      const chatbotData = await chatbotIntegration.registerChatbot(shop, req.user.id, botName);
+      
+      // Update shop
+      await db.update(shops)
+        .set({ 
+          chatbot_enabled: true,
+          chatbot_bot_id: chatbotData?.config?.botId || null,
+          chatbot_enabled_at: new Date(),
+          updated_at: new Date(),
+        })
+        .where(eq(shops.id, shopId));
+      
+      // Create subscription
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + 1);
+      
+      await db.insert(subscriptions).values({
+        user_id: req.user.id,
+        shop_id: shopId,
+        feature: 'chatbot',
+        status: 'active',
+        expires_at: expiresAt,
+      });
+      
+      // Log audit event
+      logAuditEvent(
+        req.user.id,
+        'chatbot_enabled',
+        'shop',
+        shopId.toString(),
+        { bot_id: chatbotData?.config?.botId, credits_deducted: costCredits },
+        req
+      );
+      
+      res.json({ 
+        success: true,
+        botId: chatbotData?.config?.botId,
+        creditsRemaining: newBalance,
+        expiresAt: expiresAt.toISOString(),
+      });
+      
+    } catch (error) {
+      console.error('Chatbot enablement failed:', error);
+      res.status(500).json({ 
+        error: 'Chatbot enablement failed', 
+        message: error.message 
+      });
+    }
+  } catch (error) {
+    console.error('Chatbot enable error:', error);
+    res.status(500).json({ error: 'Request failed' });
+  }
+});
+
+// Get chatbot status for a shop
+app.get('/api/shops/:id/chatbot/status', requireAuth, async (req, res) => {
+  try {
+    const shopId = parseInt(req.params.id, 10);
+    
+    const shopResult = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
+    const shop = shopResult[0];
+    
+    if (!shop) {
+      return res.status(404).json({ error: 'Shop not found' });
+    }
+    
+    if (shop.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    if (!shop.chatbot_enabled) {
+      return res.json({ enabled: false });
+    }
+    
+    // Get subscription
+    const subResult = await db.select()
+      .from(subscriptions)
+      .where(and(
+        eq(subscriptions.shop_id, shopId),
+        eq(subscriptions.feature, 'chatbot')
+      ))
+      .limit(1);
+    
+    // Try to get config from chatbot-node
+    let config = null;
+    try {
+      config = await chatbotIntegration.getChatbotConfig(shopId);
+    } catch (error) {
+      console.warn('Failed to fetch chatbot config:', error.message);
+    }
+    
+    res.json({
+      enabled: true,
+      botId: shop.chatbot_bot_id,
+      enabledAt: shop.chatbot_enabled_at,
+      subscription: subResult[0] || null,
+      config: config || null,
+    });
+  } catch (error) {
+    console.error('Get chatbot status error:', error);
+    res.status(500).json({ error: 'Request failed' });
+  }
+});
+
+// Issue SSO token for EverShop Admin
+app.post('/api/shops/:id/sso/issue', requireAuth, async (req, res) => {
+  try {
+    const shopId = parseInt(req.params.id, 10);
+    const { role } = req.body || {};
+    
+    const shopResult = await db.select().from(shops).where(eq(shops.id, shopId)).limit(1);
+    const shop = shopResult[0];
+    
+    if (!shop) {
+      return res.status(404).json({ error: 'Shop not found' });
+    }
+    
+    if (shop.user_id !== req.user.id) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    const token = await chatbotIntegration.issueSSOToken(shopId, role || 'admin');
+    
+    res.json({ 
+      token,
+      expiresIn: 3600, // 1 hour
+    });
+  } catch (error) {
+    console.error('SSO token issue error:', error);
+    res.status(500).json({ error: 'Failed to issue token', message: error.message });
+  }
+});
+
+// Get credit transactions
+app.get('/api/billing/transactions', requireAuth, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit || '50', 10);
+    const transactions = await creditService.getTransactions(req.user.id, limit);
+    const currentBalance = await creditService.getBalance(req.user.id);
+    
+    res.json({
+      transactions,
+      currentBalance,
+    });
+  } catch (error) {
+    console.error('Get transactions error:', error);
+    res.status(500).json({ error: 'Failed to get transactions' });
+  }
+});
+
+// ===== End Chatbot Integration Routes =====
+
 const server = app.listen(port, '0.0.0.0', () => {
   console.log(`shopsaas listening on ${port}`);
 });

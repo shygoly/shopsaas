@@ -1,7 +1,6 @@
 import { db } from '../db/index.js';
 import { shops, deployments } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
-import { githubClient } from './github.js';
+import { eq } from 'drizzle-orm';
 import { flyClient } from './fly.js';
 import { sendShopCreatedNotification } from '../auth/email.js';
 
@@ -15,48 +14,32 @@ class DeploymentMonitor {
   /**
    * Start monitoring a deployment
    * @param {number} deploymentId - Deployment ID
-   * @param {string} githubRunId - GitHub run ID
+   * @param {string} machineId - Fly machine ID
    * @param {string} appName - Fly app name
    * @param {Object} shopData - Shop information
    */
-  async startMonitoring(deploymentId, githubRunId, appName, shopData) {
+  async startMonitoring(deploymentId, machineId, appName, shopData) {
     if (this.activeMonitors.has(deploymentId)) {
       console.log(`Already monitoring deployment ${deploymentId}`);
       return;
     }
 
-    console.log(`🔍 Starting monitoring for deployment ${deploymentId} (run: ${githubRunId})`);
-    
-    const ownerRepo = process.env.GH_REPO;
-    if (!ownerRepo) {
-      console.error('GH_REPO environment variable not set');
-      return;
-    }
-
-    const [owner, repo] = ownerRepo.split('/');
+    console.log(`🔍 Starting monitoring for deployment ${deploymentId} (machine: ${machineId})`);
     
     // Store monitor info
     this.activeMonitors.set(deploymentId, {
-      githubRunId,
+      machineId,
       appName,
       shopData,
       startTime: Date.now(),
     });
 
     try {
-      // Start GitHub workflow monitoring
-      const finalResult = await githubClient.monitorWorkflowRun(
-        owner,
-        repo,
-        githubRunId,
-        (update) => this.handleWorkflowUpdate(deploymentId, update),
-        {
-          maxPollingTime: this.maxMonitorTime,
-          pollingInterval: this.pollInterval,
-        }
-      );
-
-      await this.handleWorkflowComplete(deploymentId, finalResult);
+      // Start machine monitoring
+      await this.monitorMachine(deploymentId, machineId, appName);
+      
+      const finalResult = await this.verifyAppHealth(appName);
+      await this.handleMonitoringComplete(deploymentId, finalResult);
     } catch (error) {
       console.error(`Error monitoring deployment ${deploymentId}:`, error);
       await this.handleMonitoringError(deploymentId, error);
@@ -66,40 +49,65 @@ class DeploymentMonitor {
   }
 
   /**
-   * Handle workflow status updates
+   * Monitor Fly machine state and health
    * @param {number} deploymentId - Deployment ID
-   * @param {Object} update - Status update
+   * @param {string} machineId - Machine ID
+   * @param {string} appName - App name
    */
-  async handleWorkflowUpdate(deploymentId, update) {
-    try {
-      console.log(`📊 Deployment ${deploymentId} update: ${update.status}`);
+  async monitorMachine(deploymentId, machineId, appName) {
+    const startTime = Date.now();
+    
+    while (Date.now() - startTime < this.maxMonitorTime) {
+      try {
+        const machineResult = await flyClient.getMachine(appName, machineId);
+        
+        if (machineResult.success) {
+          const machine = machineResult.data;
+          console.log(`📊 Machine ${machineId} state: ${machine.state}`);
+          
+          // Update deployment with machine state
+          await db.update(deployments)
+            .set({
+              logs: JSON.stringify({
+                machine_id: machineId,
+                state: machine.state,
+                last_updated: new Date().toISOString(),
+              }),
+            })
+            .where(eq(deployments.id, deploymentId));
+          
+          // If machine is started, check health
+          if (machine.state === 'started') {
+            console.log(`✅ Machine ${machineId} is started, verifying health...`);
+            break;
+          }
+          
+          // If machine failed, exit
+          if (machine.state === 'stopped' || machine.state === 'destroyed') {
+            throw new Error(`Machine ${machineId} stopped unexpectedly: ${machine.state}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Error checking machine state:`, error);
+      }
       
-      // Update deployment record
-      await db.update(deployments)
-        .set({
-          status: update.status,
-          github_run_id: update.github_run_id,
-          started_at: update.started_at ? new Date(update.started_at) : null,
-          logs: JSON.stringify({
-            github_status: update.github_status,
-            github_conclusion: update.github_conclusion,
-            html_url: update.html_url,
-            last_updated: new Date().toISOString(),
-          }),
-        })
-        .where(eq(deployments.id, deploymentId));
-
-    } catch (error) {
-      console.error(`Failed to update deployment ${deploymentId}:`, error);
+      await this.sleep(this.pollInterval);
     }
+  }
+  
+  /**
+   * Sleep utility
+   */
+  async sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
-   * Handle workflow completion
+   * Handle monitoring completion
    * @param {number} deploymentId - Deployment ID
-   * @param {Object} result - Final workflow result
+   * @param {Object} result - Health check result
    */
-  async handleWorkflowComplete(deploymentId, result) {
+  async handleMonitoringComplete(deploymentId, result) {
     const monitorInfo = this.activeMonitors.get(deploymentId);
     if (!monitorInfo) return;
 
@@ -110,26 +118,31 @@ class DeploymentMonitor {
       let finalDeploymentStatus = 'failed';
       let errorMessage = null;
 
-      if (result.success && result.status === 'success') {
-        // Workflow succeeded, now verify the app is actually healthy
-        console.log(`✅ Workflow completed successfully, checking app health: ${appName}`);
+      if (result.healthy) {
+        finalShopStatus = 'active';
+        finalDeploymentStatus = 'success';
+        console.log(`🎉 Shop deployment completed successfully: ${appName}`);
         
-        const healthResult = await this.verifyAppHealth(appName);
-        
-        if (healthResult.healthy) {
-          finalShopStatus = 'active';
-          finalDeploymentStatus = 'success';
-          console.log(`🎉 Shop deployment completed successfully: ${appName}`);
-          
-          // Send success notification
-          await this.sendSuccessNotification(shopData, appName);
-        } else {
-          errorMessage = `App deployed but health check failed: ${healthResult.error}`;
-          console.error(errorMessage);
+        // Collect and store runtime metrics
+        try {
+          const metricsResult = await flyClient.getMachineMetrics(appName, monitorInfo.machineId);
+          if (metricsResult.success) {
+            await db.update(shops)
+              .set({
+                runtime_metrics: JSON.stringify(metricsResult.data),
+                updated_at: new Date()
+              })
+              .where(eq(shops.id, shopData.shop_id));
+          }
+        } catch (metricsError) {
+          console.warn('Failed to collect metrics:', metricsError);
         }
+        
+        // Send success notification
+        await this.sendSuccessNotification(shopData, appName);
       } else {
-        errorMessage = result.error || 'Workflow failed or timed out';
-        console.error(`❌ Deployment failed for ${appName}: ${errorMessage}`);
+        errorMessage = `App deployed but health check failed: ${result.error}`;
+        console.error(errorMessage);
       }
 
       // Update database records
@@ -141,7 +154,7 @@ class DeploymentMonitor {
       });
 
     } catch (error) {
-      console.error(`Error handling workflow completion for deployment ${deploymentId}:`, error);
+      console.error(`Error handling monitoring completion for deployment ${deploymentId}:`, error);
       await this.updateFinalStatus(deploymentId, shopData.shop_id, {
         deploymentStatus: 'failed',
         shopStatus: 'failed',

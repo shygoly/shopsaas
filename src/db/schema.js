@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, timestamp, boolean, jsonb, uuid, index } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, timestamp, boolean, jsonb, uuid, index, integer } from 'drizzle-orm/pg-core';
 
 // 用户表
 export const users = pgTable('users', {
@@ -12,6 +12,8 @@ export const users = pgTable('users', {
   last_login_at: timestamp('last_login_at'), // 最后登录时间
   password_reset_token: varchar('password_reset_token', { length: 255 }), // 密码重置 token
   password_reset_expires: timestamp('password_reset_expires'), // 密码重置过期时间
+  credits: integer('credits').default(0), // 积分余额
+  first_shop_redeemed: boolean('first_shop_redeemed').default(false), // 首店免费是否已使用
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 });
@@ -53,6 +55,14 @@ export const shops = pgTable('shops', {
   status: varchar('status', { length: 50 }).default('creating'), // creating, active, failed, suspended
   admin_email: varchar('admin_email', { length: 255 }).notNull(),
   config: jsonb('config'), // shop-specific configuration
+  deployed_image: varchar('deployed_image', { length: 500 }), // Container image used
+  deployed_at: timestamp('deployed_at'), // When deployment completed
+  machine_id: varchar('machine_id', { length: 100 }), // Fly machine ID
+  machine_config: jsonb('machine_config'), // Full machine configuration (CPU, memory, volumes)
+  runtime_metrics: jsonb('runtime_metrics'), // Current health/performance metrics
+  chatbot_enabled: boolean('chatbot_enabled').default(false), // 智能客服是否启用
+  chatbot_bot_id: varchar('chatbot_bot_id', { length: 100 }), // Coze bot ID
+  chatbot_enabled_at: timestamp('chatbot_enabled_at'), // 启用时间
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 }, (table) => ({
@@ -92,4 +102,44 @@ export const audit_logs = pgTable('audit_logs', {
   user_idx: index('audit_user_idx').on(table.user_id),
   action_idx: index('audit_action_idx').on(table.action),
   created_idx: index('audit_created_idx').on(table.created_at),
+}));
+
+// 功能订阅表（智能客服等）
+export const subscriptions = pgTable('subscriptions', {
+  id: serial('id').primaryKey(),
+  user_id: serial('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  shop_id: serial('shop_id').references(() => shops.id, { onDelete: 'cascade' }),
+  feature: varchar('feature', { length: 50 }).notNull(), // 'chatbot'
+  status: varchar('status', { length: 50 }).default('active'), // active, expired, cancelled
+  expires_at: timestamp('expires_at'),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  shop_idx: index('subscription_shop_idx').on(table.shop_id),
+  feature_idx: index('subscription_feature_idx').on(table.feature),
+  status_idx: index('subscription_status_idx').on(table.status),
+}));
+
+// 店铺密钥表（SSO + Webhook）
+export const shop_secrets = pgTable('shop_secrets', {
+  id: serial('id').primaryKey(),
+  shop_id: serial('shop_id').references(() => shops.id, { onDelete: 'cascade' }).unique(),
+  sso_secret: varchar('sso_secret', { length: 255 }).notNull(),
+  webhook_secret: varchar('webhook_secret', { length: 255 }).notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+  updated_at: timestamp('updated_at').defaultNow(),
+});
+
+// 积分流水表
+export const credit_transactions = pgTable('credit_transactions', {
+  id: serial('id').primaryKey(),
+  user_id: serial('user_id').references(() => users.id, { onDelete: 'cascade' }),
+  amount: integer('amount').notNull(), // positive=credit, negative=debit
+  reason: varchar('reason', { length: 100 }).notNull(), // 'shop_creation', 'chatbot_enablement', 'topup'
+  related_shop_id: integer('related_shop_id'),
+  balance_after: integer('balance_after').notNull(),
+  created_at: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  user_idx: index('credit_user_idx').on(table.user_id),
+  created_idx: index('credit_created_idx').on(table.created_at),
 }));
