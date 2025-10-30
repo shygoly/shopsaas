@@ -61,9 +61,9 @@ class GitHubAPIClient {
     try {
       const params = new URLSearchParams({
         per_page: options.per_page || '10',
-        ...(options.status && { status: options.status }),
         ...(options.branch && { branch: options.branch }),
         ...(options.event && { event: options.event }),
+        ...(options.status && { status: options.status }),
       });
 
       const response = await this.client.get(`/repos/${owner}/${repo}/actions/runs?${params}`);
@@ -133,7 +133,6 @@ class GitHubAPIClient {
       // Get recent runs
       const runsResponse = await this.getWorkflowRuns(owner, repo, {
         per_page: '20',
-        status: 'in_progress,queued,completed',
         event: 'workflow_dispatch',
       });
 
@@ -275,29 +274,46 @@ class GitHubAPIClient {
   }
 
   /**
-   * Trigger shop deployment via repository_dispatch
+   * Trigger shop deployment via workflow_dispatch
    * @param {Object} payload - Shop deployment payload
    * @returns {Promise<Object>} Dispatch response
    */
   async triggerDeploy(payload) {
     try {
-      const owner = process.env.GH_REPO?.split('/')[0] || 'sgl1226';
-      const repo = process.env.GH_REPO?.split('/')[1] || 'shopsaas';
+      // Target the evershop-fly repository which has the actual deployment workflow
+      const owner = process.env.GH_REPO?.split('/')[0] || 'shygoly';
+      const repo = process.env.GH_REPO?.split('/')[1] || 'evershop-fly';
+      const workflowId = process.env.GH_WORKFLOW || 'deploy-new-shop.yml';
+      const ref = process.env.GH_REF || 'main';
       
-      console.log(`Dispatching deploy-shop event to ${owner}/${repo}`);
-      
-      const response = await this.client.post(
-        `/repos/${owner}/${repo}/dispatches`,
-        {
-          event_type: 'deploy-shop',
-          client_payload: payload,
+      console.log(`Dispatching workflow ${workflowId} on ${owner}/${repo} (ref: ${ref})`);
+
+      // Map payload to workflow inputs (only strings are accepted)
+      const inputs = {};
+      const addInput = (key, value) => {
+        if (value !== undefined && value !== null && value !== '') {
+          inputs[key] = String(value);
         }
-      );
-      
-      console.log(`✅ Repository dispatch sent: ${response.status}`);
-      
-      // repository_dispatch returns 204 on success, no run_id immediately available
-      // We need to poll for the run that just started
+      };
+
+      // Pass all required inputs to the evershop-fly workflow
+      // The actual workflow is in shygoly/evershop-fly, not shopsaas
+      addInput('app_name', payload.app_name);
+      addInput('shop_name', payload.shop_name);
+      addInput('admin_email', payload.admin_email);
+      addInput('admin_password', payload.admin_password);
+      addInput('image', payload.image);
+      addInput('org_slug', payload.org_slug);
+
+      const dispatchResponse = await this.triggerWorkflow(owner, repo, workflowId, ref, inputs);
+
+      if (!dispatchResponse.success) {
+        return dispatchResponse;
+      }
+
+      console.log(`✅ Workflow dispatch sent: ${dispatchResponse.status}`);
+
+      // Workflow dispatch returns immediately; wait briefly so the run appears
       await this.sleep(3000); // Wait 3s for workflow to start
       
       const recentRun = await this.findRecentWorkflowRun(owner, repo, {
@@ -308,7 +324,7 @@ class GitHubAPIClient {
       return { 
         success: true, 
         run_id: recentRun.data?.id,
-        status: response.status 
+        status: dispatchResponse.status 
       };
     } catch (error) {
       console.error(`Failed to trigger deploy:`, error.response?.data || error.message);
