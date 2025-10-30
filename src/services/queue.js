@@ -397,10 +397,152 @@ export class QueueManager {
 // Export Redis connection for health checks
 export { redisConnection };
 
+// ============================================
+// Scheduled Cleanup Queue & Worker
+// ============================================
+
+export let scheduledCleanupQueue = null;
+export let cleanupWorker = null;
+
+if (redisConnection) {
+  try {
+    // Create cleanup queue with repeat job
+    scheduledCleanupQueue = new Queue('scheduled-cleanup', {
+      connection: redisConnection,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 60000, // 1 minute
+        },
+        removeOnComplete: 10,
+        removeOnFail: 50,
+      },
+    });
+    
+    // Add repeatable job - runs every hour
+    scheduledCleanupQueue.add(
+      'cleanup-deleted-shops',
+      {},
+      {
+        repeat: {
+          pattern: '0 * * * *', // Every hour at minute 0
+        },
+        jobId: 'cleanup-deleted-shops-hourly', // Prevent duplicates
+      }
+    );
+    
+    console.log('📅 Scheduled cleanup queue initialized (runs hourly)');
+  } catch (error) {
+    console.warn('⚠️ Cleanup queue initialization failed:', error.message);
+  }
+}
+
+// Cleanup processor
+class CleanupProcessor {
+  /**
+   * Process scheduled cleanup job
+   */
+  async processCleanup(job) {
+    try {
+      console.log('🧹 Running scheduled cleanup check...');
+      
+      const { cleanupService } = await import('./cleanup.service.js');
+      
+      // Find shops scheduled for hard deletion
+      const now = new Date();
+      const shopsList = await db.select().from(shops)
+        .where(eq(shops.status, 'deleted'));
+      
+      const readyForDeletion = shopsList.filter(s => 
+        s.scheduled_hard_delete_at && new Date(s.scheduled_hard_delete_at) <= now
+      );
+      
+      if (readyForDeletion.length === 0) {
+        console.log('  ℹ️ No shops ready for hard deletion');
+        return { processed: 0 };
+      }
+      
+      console.log(`  📋 Found ${readyForDeletion.length} shops ready for hard deletion`);
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const shop of readyForDeletion) {
+        console.log(`  🗑️ Hard deleting shop ${shop.id} (${shop.app_name})`);
+        
+        const result = await cleanupService.hardDeleteShop(shop.id);
+        
+        if (result.success) {
+          successCount++;
+          console.log(`    ✅ Successfully deleted ${shop.app_name}`);
+        } else {
+          failCount++;
+          console.error(`    ❌ Failed to delete ${shop.app_name}: ${result.error}`);
+        }
+      }
+      
+      console.log(`🧹 Cleanup completed: ${successCount} success, ${failCount} failed`);
+      
+      return {
+        processed: readyForDeletion.length,
+        success: successCount,
+        failed: failCount
+      };
+    } catch (error) {
+      console.error('❌ Cleanup process failed:', error);
+      throw error;
+    }
+  }
+}
+
+// Initialize cleanup worker
+if (scheduledCleanupQueue) {
+  const cleanupProcessor = new CleanupProcessor();
+  
+  cleanupWorker = new Worker(
+    'scheduled-cleanup',
+    async (job) => {
+      return await cleanupProcessor.processCleanup(job);
+    },
+    {
+      connection: redisConnection,
+      concurrency: 1, // Run one cleanup at a time
+    }
+  );
+  
+  cleanupWorker.on('completed', (job, result) => {
+    console.log(`✅ Cleanup job ${job.id} completed:`, result);
+  });
+  
+  cleanupWorker.on('failed', (job, error) => {
+    console.error(`❌ Cleanup job ${job.id} failed:`, error.message);
+  });
+  
+  console.log('✅ Cleanup worker initialized');
+}
+
 // Graceful shutdown
 export async function closeQueue() {
   console.log('🧹 Closing queue and worker...');
-  await shopCreationWorker.close();
-  await shopCreationQueue.close();
-  redisConnection.disconnect();
+  
+  if (shopCreationWorker) {
+    await shopCreationWorker.close();
+  }
+  
+  if (cleanupWorker) {
+    await cleanupWorker.close();
+  }
+  
+  if (shopCreationQueue) {
+    await shopCreationQueue.close();
+  }
+  
+  if (scheduledCleanupQueue) {
+    await scheduledCleanupQueue.close();
+  }
+  
+  if (redisConnection) {
+    redisConnection.disconnect();
+  }
 }

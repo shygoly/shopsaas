@@ -357,6 +357,11 @@
                 const response = await fetch('/api/shops');
                 const data = await response.json();
                 
+                // Filter out deleted shops from display
+                if (data.shops) {
+                    data.shops = data.shops.filter(s => s.status !== 'deleted');
+                }
+                
                 const shopsList = document.getElementById('shops-list');
                 if (data.shops && data.shops.length > 0) {
                     shopsList.innerHTML = data.shops.map(shop => `

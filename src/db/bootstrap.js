@@ -148,7 +148,9 @@ export async function ensureDatabaseBootstrap() {
         ADD COLUMN IF NOT EXISTS deployed_at timestamp,
         ADD COLUMN IF NOT EXISTS machine_id varchar(100),
         ADD COLUMN IF NOT EXISTS machine_config jsonb,
-        ADD COLUMN IF NOT EXISTS runtime_metrics jsonb
+        ADD COLUMN IF NOT EXISTS runtime_metrics jsonb,
+        ADD COLUMN IF NOT EXISTS deleted_at timestamp,
+        ADD COLUMN IF NOT EXISTS scheduled_hard_delete_at timestamp
     `);
 
     // deployments optional columns

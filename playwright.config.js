@@ -3,6 +3,14 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
+const webServerConfig = process.env.SKIP_WEB_SERVER
+  ? undefined
+  : {
+      command: 'npm run dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+    };
+
 export default defineConfig({
   testDir: './e2e',
   /* Run tests in files in parallel */
@@ -43,10 +51,5 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: webServerConfig,
 });
-

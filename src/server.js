@@ -790,11 +790,35 @@ app.delete('/api/shops/:id', requireAuth, async (req, res) => {
       .limit(1);
     if (owned.length === 0) return res.status(404).json({ error: 'Shop not found' });
 
+    const now = new Date();
+    const hardDeleteDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days later
+
     await db.update(shops)
-      .set({ status: 'deleted', updated_at: new Date() })
+      .set({ 
+        status: 'deleted', 
+        deleted_at: now,
+        scheduled_hard_delete_at: hardDeleteDate,
+        updated_at: now 
+      })
       .where(eq(shops.id, shopId));
 
-    res.json({ success: true });
+    // Log audit event
+    await logAuditEvent(
+      req.user.id,
+      'shop_soft_deleted',
+      'shop',
+      shopId,
+      {
+        shop_name: owned[0].shop_name,
+        app_name: owned[0].app_name,
+        hard_delete_scheduled: hardDeleteDate.toISOString()
+      },
+      req
+    );
+
+    console.log(`🗑️ Shop ${shopId} soft deleted, scheduled hard delete on ${hardDeleteDate.toISOString()}`);
+
+    res.json({ success: true, scheduled_hard_delete_at: hardDeleteDate });
   } catch (e) {
     console.error('Delete shop error:', e);
     res.status(500).json({ error: 'Failed to delete shop' });

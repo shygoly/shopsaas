@@ -63,6 +63,8 @@ export const shops = pgTable('shops', {
   chatbot_enabled: boolean('chatbot_enabled').default(false), // 智能客服是否启用
   chatbot_bot_id: varchar('chatbot_bot_id', { length: 100 }), // Coze bot ID
   chatbot_enabled_at: timestamp('chatbot_enabled_at'), // 启用时间
+  deleted_at: timestamp('deleted_at'), // 软删除时间
+  scheduled_hard_delete_at: timestamp('scheduled_hard_delete_at'), // 计划硬删除时间（7天后）
   created_at: timestamp('created_at').defaultNow(),
   updated_at: timestamp('updated_at').defaultNow(),
 }, (table) => ({
