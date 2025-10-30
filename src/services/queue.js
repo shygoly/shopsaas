@@ -4,6 +4,7 @@ import { db } from '../db/index.js';
 import { shops, deployments } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { flyClient } from './fly.js';
+import { injectBaselineEnvVars } from './evershop-provision.service.js';
 import { deploymentMonitor } from './deployment-monitor.js';
 
 // Redis connection with error handling
@@ -81,7 +82,19 @@ class ShopCreationProcessor {
       // Update job progress
       await job.updateProgress(10);
 
-      // Step 1: Trigger GitHub Workflow to deploy shop
+      // Step 1: Inject baseline environment variables so the app can boot
+      try {
+        const baseline = await injectBaselineEnvVars(app_name, {
+          customDomain: null,
+          shopId: job.data?.shopData?.shop_id,
+          s3: { enable: true },
+        });
+        console.log(`✅ Baseline env injected for ${app_name}:`, baseline.envKeys.join(','));
+      } catch (e) {
+        console.warn(`⚠️ Failed to inject baseline env for ${app_name}: ${e.message}`);
+      }
+
+      // Step 2: Trigger GitHub Workflow to deploy shop
       console.log(`🚀 Triggering GitHub Workflow for shop deployment: ${app_name}`);
       
       const image = process.env.EVERSHOP_IMAGE || 'registry.fly.io/evershop-fly:deployment-01K88VT3QAADMPVZT2SBX08V0R';
