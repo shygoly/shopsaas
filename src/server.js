@@ -1205,6 +1205,25 @@ app.post('/api/shops/:id/chatbot/enable', requireAuth, async (req, res) => {
       // Register with chatbot-node
       const chatbotData = await chatbotIntegration.registerChatbot(shop, req.user.id, botName);
       
+      // Get the secrets that were just created
+      const secretsResult = await db.select()
+        .from(shop_secrets)
+        .where(eq(shop_secrets.shop_id, shopId))
+        .limit(1);
+      
+      const secrets = secretsResult[0];
+      
+      // Inject chatbot environment variables to EverShop Fly app
+      const envVarsInjected = await chatbotIntegration.injectChatbotEnvVars(
+        shop, 
+        secrets.sso_secret, 
+        secrets.webhook_secret
+      );
+      
+      if (!envVarsInjected) {
+        console.warn(`⚠️ Chatbot enabled but failed to inject env vars to ${shop.app_name}`);
+      }
+      
       // Update shop
       await db.update(shops)
         .set({ 
@@ -1233,7 +1252,7 @@ app.post('/api/shops/:id/chatbot/enable', requireAuth, async (req, res) => {
         'chatbot_enabled',
         'shop',
         shopId.toString(),
-        { bot_id: chatbotData?.config?.botId, credits_deducted: costCredits },
+        { bot_id: chatbotData?.config?.botId, credits_deducted: costCredits, env_vars_injected: envVarsInjected },
         req
       );
       
@@ -1242,6 +1261,7 @@ app.post('/api/shops/:id/chatbot/enable', requireAuth, async (req, res) => {
         botId: chatbotData?.config?.botId,
         creditsRemaining: newBalance,
         expiresAt: expiresAt.toISOString(),
+        envVarsInjected,
       });
       
     } catch (error) {

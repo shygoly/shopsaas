@@ -133,3 +133,36 @@ export async function ensureSecrets(shopId) {
   return { sso_secret: ssoSecret, webhook_secret: webhookSecret };
 }
 
+/**
+ * Inject chatbot environment variables to EverShop Fly app
+ */
+export async function injectChatbotEnvVars(shop, ssoSecret, webhookSecret) {
+  const FlyAPIClient = (await import('./fly.js')).default;
+  const flyClient = new FlyAPIClient();
+  
+  const chatbotEnvVars = {
+    CHATBOT_ENABLED: 'true',
+    CHATBOT_NODE_URL: CHATBOT_BASE_URL,
+    CHATBOT_SHOP_ID: `shop-${shop.id}`,
+    CHATBOT_SSO_SECRET: ssoSecret,
+    CHATBOT_WEBHOOK_SECRET: webhookSecret,
+  };
+  
+  console.log(`🔧 Injecting chatbot env vars to ${shop.app_name}...`);
+  
+  try {
+    const result = await flyClient.setSecrets(shop.app_name, chatbotEnvVars);
+    
+    if (result.success) {
+      console.log(`✅ Chatbot env vars injected to ${shop.app_name}`);
+      return true;
+    } else {
+      console.error(`❌ Failed to inject chatbot env vars: ${result.error || 'Unknown error'}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`❌ Error injecting chatbot env vars:`, error);
+    return false;
+  }
+}
+
