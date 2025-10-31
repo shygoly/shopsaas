@@ -96,8 +96,8 @@ export async function injectBaselineEnvVars(appName, options) {
         s3Env.AWS_ENDPOINT_URL_S3 = process.env.S3_ENDPOINT;
       }
       
-      // R2 public URL base (for browser access) - must use pub domain, NOT API endpoint!
-      s3Env.PUBLIC_ASSET_BASE_URL = process.env.S3_PUBLIC_BASE_URL || 'https://pub-4a34b231251e46de8ff15514af6796ca.r2.dev';
+      // R2 public URL base (for browser access) - must use custom domain, NOT API endpoint!
+      s3Env.PUBLIC_ASSET_BASE_URL = process.env.S3_PUBLIC_BASE_URL || 'https://r2.szchada.top';
       
       // R2 requires path-style access (bucket/key, not bucket.endpoint/key)
       s3Env.S3_FORCE_PATH_STYLE = 'true';
