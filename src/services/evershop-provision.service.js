@@ -90,8 +90,18 @@ export async function injectBaselineEnvVars(appName, options) {
       s3Env.AWS_SECRET_ACCESS_KEY = secretAccessKey;
       s3Env.AWS_BUCKET_NAME = process.env.S3_BUCKET || 'shop-s3';
       s3Env.AWS_REGION = process.env.S3_REGION || 'auto';
-      if (process.env.S3_ENDPOINT) s3Env.AWS_ENDPOINT_URL_S3 = process.env.S3_ENDPOINT;
-      if (process.env.S3_PUBLIC_BASE_URL) s3Env.PUBLIC_ASSET_BASE_URL = process.env.S3_PUBLIC_BASE_URL;
+      
+      // R2 S3 API endpoint (for SDK uploads)
+      if (process.env.S3_ENDPOINT) {
+        s3Env.AWS_ENDPOINT_URL_S3 = process.env.S3_ENDPOINT;
+      }
+      
+      // R2 public URL base (for browser access) - must use pub domain, NOT API endpoint!
+      s3Env.PUBLIC_ASSET_BASE_URL = process.env.S3_PUBLIC_BASE_URL || 'https://pub-4a34b231251e46de8ff15514af6796ca.r2.dev';
+      
+      // R2 requires path-style access (bucket/key, not bucket.endpoint/key)
+      s3Env.S3_FORCE_PATH_STYLE = 'true';
+      
       // Note: S3_PREFIX per-shop isolation requires custom uploader logic, skipping for now
     } else {
       console.warn('S3 (R2) requested but AWS_ACCESS_KEY_ID/SECRET not available; skipping S3 env injection');
