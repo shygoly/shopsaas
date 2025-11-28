@@ -40,6 +40,11 @@
             background: rgba(0,0,0,0.7); z-index: 9999;
             display: none; align-items: center; justify-content: center; color: white;
         }
+
+        /* Table Styles */
+        @container(max-width: 768px) { .table-col-updated { display: none; } }
+        @container(max-width: 640px) { .table-col-status { display: none; } .table-col-shop-name { width: 60%; } .table-col-actions { width: 40%; } }
+        @container(max-width: 480px) { .table-col-actions { display: none; } .table-col-shop-name { width: 100%; } }
     </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-gray-600 dark:text-gray-300">
@@ -54,7 +59,6 @@
 
     <!-- LANDING PAGE VIEW -->
     <div id="view-landing" class="view-section active relative flex min-h-screen w-full flex-col overflow-x-hidden">
-        <!-- ... (Landing Page Header & Content from previous step) ... -->
         <header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200/50 dark:border-white/10 bg-background-light/80 dark:bg-background-dark/80 px-10 py-3 backdrop-blur-sm">
             <div class="flex items-center gap-4 text-gray-800 dark:text-white cursor-pointer">
                 <div class="size-6 text-primary">
@@ -115,23 +119,23 @@
         </div>
     </div>
 
-    <!-- DASHBOARD VIEW -->
-    <div id="view-dashboard" class="view-section bg-background-light dark:bg-background-dark font-display">
+    <!-- MAIN APP LAYOUT (Shared for Dashboard, Shop List, etc.) -->
+    <div id="app-layout" class="view-section" style="display: none;">
         <div class="flex min-h-screen">
             <!-- Sidebar -->
-            <aside class="hidden md:flex w-64 flex-col bg-white dark:bg-[#111418] border-r border-gray-200 dark:border-gray-800 p-4 fixed h-full">
+            <aside class="hidden md:flex w-64 flex-col bg-white dark:bg-[#111418] border-r border-gray-200 dark:border-gray-800 p-4 fixed h-full z-20">
                 <div class="flex items-center gap-2 mb-8 px-2">
                     <span class="material-symbols-outlined text-primary text-3xl">store</span>
                     <span class="text-2xl font-bold text-gray-900 dark:text-white">ShopSaaS</span>
                 </div>
                 <div class="flex flex-col gap-2 flex-1">
-                    <a onclick="switchView('view-dashboard')" class="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary">
+                    <a onclick="switchView('view-dashboard')" class="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 nav-item" id="nav-dashboard">
                         <span class="material-symbols-outlined">dashboard</span>
                         <p class="text-sm font-medium">Dashboard</p>
                     </a>
-                    <a onclick="switchView('view-shop-list')" class="cursor-pointer flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                    <a onclick="switchView('view-shop-list')" class="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 nav-item" id="nav-shops">
                         <span class="material-symbols-outlined">storefront</span>
-                        <p class="text-sm font-medium">Shops</p>
+                        <p class="text-sm font-medium">My Shops</p>
                     </a>
                 </div>
                 <div class="flex gap-3 items-center border-t border-gray-200 dark:border-gray-800 pt-4 mt-auto">
@@ -144,54 +148,95 @@
                 </div>
             </aside>
 
-            <!-- Main Content -->
-            <main class="flex-1 p-8 md:ml-64">
+            <!-- Main Content Area -->
+            <main class="flex-1 p-8 md:ml-64 w-full">
                 <div class="max-w-7xl mx-auto">
-                    <!-- Header -->
-                    <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
-                        <p class="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Dashboard</p>
-                        <button onclick="switchView('view-create-shop')" class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20">
-                            <span class="material-symbols-outlined">add_circle</span>
-                            <span>Add New Shop</span>
-                        </button>
-                    </div>
-
-                    <!-- Stats Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div class="flex flex-col gap-4 rounded-xl p-6 bg-white dark:bg-[#111418] border border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-gray-500 dark:text-gray-400">account_balance_wallet</span>
-                                <p class="text-gray-800 dark:text-white text-base font-medium">Credit Balance</p>
-                            </div>
-                            <p class="text-gray-900 dark:text-white text-4xl font-bold" id="dashboard-credits">0</p>
-                            <button class="flex items-center text-sm font-bold text-primary hover:underline mt-2">
-                                <span>Add Credits</span> <span class="material-symbols-outlined text-sm ml-1">arrow_forward</span>
+                    
+                    <!-- DASHBOARD CONTENT -->
+                    <div id="content-dashboard" class="content-section">
+                        <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
+                            <p class="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]">Dashboard</p>
+                            <button onclick="switchView('view-create-shop')" class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90 shadow-lg shadow-primary/20">
+                                <span class="material-symbols-outlined">add_circle</span>
+                                <span>Add New Shop</span>
                             </button>
                         </div>
-                        <div class="flex flex-col gap-4 rounded-xl p-6 bg-white dark:bg-[#111418] border border-gray-200 dark:border-gray-800">
-                            <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-gray-500 dark:text-gray-400">psychology</span>
-                                <p class="text-gray-800 dark:text-white text-base font-medium">System Status</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <div class="flex flex-col gap-4 rounded-xl p-6 bg-white dark:bg-[#111418] border border-gray-200 dark:border-gray-800">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-gray-500 dark:text-gray-400">account_balance_wallet</span>
+                                    <p class="text-gray-800 dark:text-white text-base font-medium">Credit Balance</p>
+                                </div>
+                                <p class="text-gray-900 dark:text-white text-4xl font-bold" id="dashboard-credits">0</p>
+                                <button class="flex items-center text-sm font-bold text-primary hover:underline mt-2">
+                                    <span>Add Credits</span> <span class="material-symbols-outlined text-sm ml-1">arrow_forward</span>
+                                </button>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="w-3 h-3 rounded-full bg-green-500"></span>
-                                <p class="text-gray-900 dark:text-white text-2xl font-bold">Operational</p>
+                            <div class="flex flex-col gap-4 rounded-xl p-6 bg-white dark:bg-[#111418] border border-gray-200 dark:border-gray-800">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-gray-500 dark:text-gray-400">psychology</span>
+                                    <p class="text-gray-800 dark:text-white text-base font-medium">System Status</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                                    <p class="text-gray-900 dark:text-white text-2xl font-bold">Operational</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 class="text-gray-900 dark:text-white text-[22px] font-bold mb-4">Recent Shops</h2>
+                        <div id="dashboard-shops-grid" class="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
+                            <!-- Shops injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- SHOP LIST CONTENT (Table View) -->
+                    <div id="content-shop-list" class="content-section" style="display: none;">
+                         <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                            <p class="text-4xl font-black leading-tight tracking-[-0.033em] text-gray-900 dark:text-white">My Shops</p>
+                            <button onclick="switchView('view-create-shop')" class="flex h-10 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-lg bg-primary px-4 text-sm font-bold leading-normal text-white hover:opacity-90">
+                                <span class="material-symbols-outlined text-lg">add</span>
+                                <span class="truncate">Create New Shop</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Search & Filters -->
+                        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+                            <div class="relative flex-1">
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <span class="material-symbols-outlined text-gray-400">search</span>
+                                </div>
+                                <input type="text" id="shop-search" onkeyup="filterShops()" class="w-full rounded-lg border-gray-200 bg-white p-2 pl-10 text-gray-900 focus:border-primary focus:ring-primary dark:border-white/10 dark:bg-[#111418] dark:text-white sm:max-w-xs" placeholder="Search shops...">
+                            </div>
+                        </div>
+
+                        <!-- Table Container -->
+                        <div class="@container">
+                            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white dark:bg-[#111418] dark:border-white/10">
+                                <table class="w-full">
+                                    <thead class="border-b border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5">
+                                        <tr>
+                                            <th class="table-col-shop-name w-2/5 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Shop Name</th>
+                                            <th class="table-col-status w-1/5 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Status</th>
+                                            <th class="table-col-updated w-1/5 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Created At</th>
+                                            <th class="table-col-actions w-1/5 px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="shop-table-body" class="divide-y divide-gray-200 dark:divide-white/10">
+                                        <!-- Table rows injected via JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Shops Grid -->
-                    <h2 class="text-gray-900 dark:text-white text-[22px] font-bold mb-4">Your Shops</h2>
-                    <div id="dashboard-shops-grid" class="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-6">
-                        <!-- Shops will be injected here -->
-                        <div class="text-gray-500 italic">Loading shops...</div>
-                    </div>
                 </div>
             </main>
         </div>
     </div>
 
-    <!-- CREATE SHOP VIEW -->
+    <!-- CREATE SHOP VIEW (Standalone) -->
     <div id="view-create-shop" class="view-section bg-background-light dark:bg-background-dark min-h-screen">
         <div class="max-w-4xl mx-auto p-8">
             <header class="mb-8">
@@ -201,91 +246,65 @@
                     <span class="text-gray-900 dark:text-white">Create New Shop</span>
                 </div>
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Create Your New Shop</h1>
-                <p class="text-gray-500 dark:text-gray-400 mt-2">Launch a new storefront in minutes.</p>
             </header>
 
             <form onsubmit="handleCreateShop(event)" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div class="lg:col-span-2 flex flex-col gap-6">
-                    <!-- Details -->
                     <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-gray-200 dark:border-gray-800">
                         <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-6">Shop Details</h2>
-                        
                         <div class="space-y-6">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shop Name</label>
                                 <input type="text" name="shop_name" required class="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white h-12 px-4" placeholder="e.g. My Awesome Store">
                             </div>
-                            
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Admin Email</label>
                                 <input type="email" name="admin_email" required class="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white h-12 px-4" placeholder="admin@yourstore.com">
                             </div>
-                            
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Admin Password (min 8 chars)</label>
                                 <input type="password" name="admin_password" required minlength="8" class="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white h-12 px-4" placeholder="Strong password">
                             </div>
                         </div>
                     </div>
-
-                    <!-- Theme Selection (Visual Only for now) -->
-                    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-gray-200 dark:border-gray-800">
-                        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Select Starting Theme</h2>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="border-2 border-primary rounded-lg p-4 cursor-pointer bg-gray-50 dark:bg-gray-800 relative">
-                                <div class="absolute top-2 right-2 text-primary bg-white dark:bg-gray-900 rounded-full p-1"><span class="material-symbols-outlined text-sm">check</span></div>
-                                <div class="h-20 bg-gray-200 dark:bg-gray-700 rounded mb-3"></div>
-                                <h3 class="font-bold text-gray-900 dark:text-white">Standard</h3>
-                                <p class="text-xs text-gray-500">Default responsive theme</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Sidebar Actions -->
                 <div class="lg:col-span-1 space-y-4">
                     <div class="bg-primary/5 dark:bg-primary/10 p-6 rounded-xl border border-primary/20">
                         <h3 class="font-bold text-primary mb-2">Ready to Launch?</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Your shop will be provisioned immediately. DNS propagation may take a few minutes.</p>
-                        <button type="submit" class="w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 shadow-lg shadow-primary/20">
-                            Create Shop
-                        </button>
-                        <button type="button" onclick="switchView('view-dashboard')" class="w-full mt-3 py-3 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
-                            Cancel
-                        </button>
+                        <button type="submit" class="w-full py-3 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 shadow-lg shadow-primary/20">Create Shop</button>
+                        <button type="button" onclick="switchView('view-dashboard')" class="w-full mt-3 py-3 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
                     </div>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- SHOP DETAILS VIEW -->
+    <!-- SHOP DETAILS VIEW (Standalone) -->
     <div id="view-shop-details" class="view-section bg-background-light dark:bg-background-dark min-h-screen">
-        <div class="flex min-h-screen">
-             <!-- Reused Sidebar (hidden on mobile) -->
+        <!-- (Same layout structure as dashboard but different content) -->
+         <div class="flex min-h-screen">
              <aside class="hidden md:flex w-64 flex-col bg-white dark:bg-[#111418] border-r border-gray-200 dark:border-gray-800 p-4 fixed h-full">
-                <div class="flex items-center gap-2 mb-8 px-2">
+                 <div class="flex items-center gap-2 mb-8 px-2">
                     <span class="material-symbols-outlined text-primary text-3xl">store</span>
                     <span class="text-2xl font-bold text-gray-900 dark:text-white">ShopSaaS</span>
                 </div>
                 <div class="flex flex-col gap-2 flex-1">
-                    <a onclick="switchView('view-dashboard')" class="cursor-pointer flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-                        <span class="material-symbols-outlined">dashboard</span>
-                        <p class="text-sm font-medium">Dashboard</p>
+                    <a onclick="switchView('view-dashboard')" class="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
+                        <span class="material-symbols-outlined">dashboard</span><p class="text-sm font-medium">Dashboard</p>
+                    </a>
+                     <a onclick="switchView('view-shop-list')" class="cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300">
+                        <span class="material-symbols-outlined">storefront</span><p class="text-sm font-medium">My Shops</p>
                     </a>
                 </div>
-            </aside>
-
-            <main class="flex-1 p-8 md:ml-64">
+             </aside>
+             <main class="flex-1 p-8 md:ml-64">
                 <div class="max-w-5xl mx-auto">
-                    <!-- Breadcrumbs -->
                     <div class="mb-4 flex items-center gap-2 text-sm">
-                        <a onclick="switchView('view-dashboard')" class="cursor-pointer text-gray-500 hover:text-primary">Shops</a>
+                        <a onclick="switchView('view-shop-list')" class="cursor-pointer text-gray-500 hover:text-primary">Shops</a>
                         <span class="material-symbols-outlined text-sm text-gray-400">chevron_right</span>
                         <span id="detail-shop-name-crumb" class="font-medium text-gray-900 dark:text-white">Shop Name</span>
                     </div>
-
-                    <!-- Header -->
                     <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
                         <div class="flex items-center gap-4">
                             <h1 id="detail-shop-name" class="text-3xl font-bold text-gray-900 dark:text-white">Shop Name</h1>
@@ -300,63 +319,65 @@
                             </a>
                         </div>
                     </div>
-
-                    <!-- Details Grid -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <!-- Info Card -->
                         <div class="lg:col-span-2 space-y-6">
-                            <div class="bg-white dark:bg-[#111418] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                                <div class="p-5 border-b border-gray-200 dark:border-gray-800">
-                                    <h2 class="font-bold text-gray-900 dark:text-white">Shop Information</h2>
-                                </div>
-                                <div class="p-5 space-y-4">
-                                    <div>
-                                        <label class="text-xs font-medium text-gray-500 uppercase">App Name</label>
-                                        <p id="detail-app-name" class="text-base text-gray-900 dark:text-white font-mono bg-gray-50 dark:bg-gray-900 p-2 rounded mt-1 select-all">app-name</p>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-medium text-gray-500 uppercase">Domain</label>
-                                        <p id="detail-domain" class="text-base text-gray-900 dark:text-white mt-1">...</p>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-medium text-gray-500 uppercase">Created At</label>
-                                        <p id="detail-created" class="text-base text-gray-900 dark:text-white mt-1">...</p>
-                                    </div>
-                                </div>
+                            <div class="bg-white dark:bg-[#111418] rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
+                                <div><label class="text-xs font-medium text-gray-500 uppercase">App Name</label><p id="detail-app-name" class="text-base text-gray-900 dark:text-white font-mono mt-1">app-name</p></div>
+                                <div><label class="text-xs font-medium text-gray-500 uppercase">Domain</label><p id="detail-domain" class="text-base text-gray-900 dark:text-white mt-1">...</p></div>
+                                <div><label class="text-xs font-medium text-gray-500 uppercase">Created At</label><p id="detail-created" class="text-base text-gray-900 dark:text-white mt-1">...</p></div>
                             </div>
                         </div>
-
-                        <!-- Actions Column -->
                         <div class="space-y-6">
                              <div class="bg-white dark:bg-[#111418] rounded-xl border border-red-200 dark:border-red-900/30 overflow-hidden">
-                                <div class="p-5 border-b border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10">
-                                    <h2 class="font-bold text-red-700 dark:text-red-400">Danger Zone</h2>
-                                </div>
-                                <div class="p-5">
-                                    <p class="text-sm text-gray-500 mb-4">Permanently delete this shop and all its data.</p>
-                                    <button onclick="handleDeleteShop()" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-destructive text-white hover:bg-red-700 font-medium">
-                                        <span class="material-symbols-outlined text-base">delete</span> Delete Shop
-                                    </button>
-                                </div>
+                                <div class="p-5 border-b border-red-100 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10"><h2 class="font-bold text-red-700 dark:text-red-400">Danger Zone</h2></div>
+                                <div class="p-5"><button onclick="handleDeleteShop()" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-destructive text-white hover:bg-red-700 font-medium"><span class="material-symbols-outlined text-base">delete</span> Delete Shop</button></div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
+             </main>
+         </div>
     </div>
 
     <script>
         // --- GLOBAL STATE & UTILS ---
         let currentUser = null;
         let currentShopId = null;
+        let allShops = [];
 
         function switchView(viewId) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
+            // 1. Hide standalone views
+            ['view-landing', 'view-auth', 'view-create-shop', 'view-shop-details'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.remove('active');
+            });
             
-            // View specific logic
-            if (viewId === 'view-dashboard') loadDashboard();
+            // 2. Hide/Show Main App Layout
+            const appLayout = document.getElementById('app-layout');
+            
+            if (viewId === 'view-dashboard' || viewId === 'view-shop-list') {
+                appLayout.style.display = 'block';
+                // Toggle content inside app layout
+                document.getElementById('content-dashboard').style.display = viewId === 'view-dashboard' ? 'block' : 'none';
+                document.getElementById('content-shop-list').style.display = viewId === 'view-shop-list' ? 'block' : 'none';
+                
+                // Update Sidebar Active State
+                document.getElementById('nav-dashboard').className = viewId === 'view-dashboard' ? 
+                    'cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary nav-item' : 
+                    'cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 nav-item';
+                    
+                document.getElementById('nav-shops').className = viewId === 'view-shop-list' ? 
+                    'cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary nav-item' : 
+                    'cursor-pointer flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 nav-item';
+
+                if (viewId === 'view-dashboard') loadDashboard();
+                if (viewId === 'view-shop-list') loadShopList();
+
+            } else {
+                appLayout.style.display = 'none';
+                const target = document.getElementById(viewId);
+                if(target) target.classList.add('active');
+            }
         }
 
         function showLoading(show, message = "Loading...") {
@@ -413,27 +434,13 @@
                 showLoading(false);
             }
         }
-
-        async function handleRegister() {
-            const name = prompt('Your Name');
-            const email = prompt('Email');
-            const password = prompt('Password (min 8 chars)');
-            if(!email || !password) return;
-            
-            showLoading(true, "Creating account...");
-            try {
-                const res = await fetch('/auth/password/register', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({email, password, name})
-                });
-                if (res.ok) {
-                    alert('Account created! Please sign in.');
-                } else {
-                    const d = await res.json();
-                    alert(d.error || 'Failed');
-                }
-            } catch (e) { alert(e.message); }
-            finally { showLoading(false); }
+        
+        async function handleRegister() { /* Reuse previous implementation */ 
+             const name = prompt('Your Name'); const email = prompt('Email'); const password = prompt('Password (min 8 chars)');
+             if(!email || !password) return;
+             showLoading(true, "Creating account...");
+             try { const res = await fetch('/auth/password/register', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email, password, name}) });
+             if (res.ok) alert('Account created! Please sign in.'); else { const d = await res.json(); alert(d.error || 'Failed'); } } catch (e) { alert(e.message); } finally { showLoading(false); }
         }
 
         async function logout() {
@@ -442,50 +449,46 @@
             switchView('view-landing');
         }
 
-        // --- DASHBOARD LOGIC ---
-        async function loadDashboard() {
+        // --- DATA LOADING ---
+        async function fetchShops() {
             try {
-                // Load credits
+                const res = await fetch('/api/shops');
+                const data = await res.json();
+                allShops = (data.shops || []).filter(s => s.status !== 'deleted');
+                
+                // Also update credits
                 fetch('/api/billing/summary').then(r => r.json()).then(d => {
                     document.getElementById('dashboard-credits').textContent = d.credits || 0;
                 });
-
-                // Load shops
-                const res = await fetch('/api/shops');
-                const data = await res.json();
-                renderShopsGrid(data.shops || []);
+                
+                return allShops;
             } catch (e) {
                 console.error(e);
+                return [];
             }
         }
 
-        function renderShopsGrid(shops) {
+        // --- DASHBOARD VIEW LOGIC ---
+        async function loadDashboard() {
+            const shops = await fetchShops();
+            renderDashboardGrid(shops.slice(0, 6)); // Show first 6
+        }
+
+        function renderDashboardGrid(shops) {
             const container = document.getElementById('dashboard-shops-grid');
-            const validShops = shops.filter(s => s.status !== 'deleted');
-            
-            if (validShops.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full flex flex-col items-center justify-center p-10 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl">
-                        <p class="text-gray-500 mb-4">You haven't created any shops yet.</p>
-                        <button onclick="switchView('view-create-shop')" class="text-primary font-bold hover:underline">Create your first shop</button>
-                    </div>
-                `;
+            if (shops.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-gray-500">No shops found.</div>';
                 return;
             }
-
-            container.innerHTML = validShops.map(shop => `
-                <div class="flex flex-col gap-4 p-6 bg-white dark:bg-[#111418] border border-gray-200 dark:border-gray-800 rounded-xl transition-all hover:shadow-md">
+            container.innerHTML = shops.map(shop => `
+                <div class="flex flex-col gap-4 p-6 bg-white dark:bg-[#111418] border border-gray-200 dark:border-gray-800 rounded-xl hover:shadow-md transition-all">
                     <div class="flex items-center gap-3">
-                        <div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xl font-bold">
-                            ${shop.shop_name.substring(0,2).toUpperCase()}
-                        </div>
+                        <div class="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-xl font-bold">${shop.shop_name.substring(0,2).toUpperCase()}</div>
                         <div class="flex-1 min-w-0">
                             <p class="text-gray-900 dark:text-white text-base font-bold truncate">${shop.shop_name}</p>
                             <p class="text-gray-500 dark:text-gray-400 text-xs truncate">${shop.app_name}.fly.dev</p>
                         </div>
-                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(shop.status)}">
-                            ${shop.status}
-                        </span>
+                        <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(shop.status)}">${shop.status}</span>
                     </div>
                     <div class="flex gap-2 mt-auto pt-4">
                         <button onclick="openShopDetails(${shop.id})" class="flex-1 h-9 px-3 text-sm font-bold rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700">Manage</button>
@@ -495,92 +498,97 @@
             `).join('');
         }
 
+        // --- SHOP LIST VIEW LOGIC ---
+        async function loadShopList() {
+            const shops = await fetchShops();
+            renderShopTable(shops);
+        }
+
+        function renderShopTable(shops) {
+            const tbody = document.getElementById('shop-table-body');
+            if (shops.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No shops found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = shops.map(shop => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                    <td class="table-col-shop-name px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                        <div class="flex items-center gap-3">
+                            <div class="size-8 rounded bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">${shop.shop_name.substring(0,1)}</div>
+                            <div>
+                                <p>${shop.shop_name}</p>
+                                <p class="text-xs text-gray-500">${shop.app_name}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="table-col-status px-6 py-4 text-sm">
+                        <span class="inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusColor(shop.status)}">
+                            <span class="size-1.5 rounded-full bg-current"></span> ${shop.status}
+                        </span>
+                    </td>
+                    <td class="table-col-updated px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                        ${new Date(shop.created_at).toLocaleDateString()}
+                    </td>
+                    <td class="table-col-actions px-6 py-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <button onclick="openShopDetails(${shop.id})" class="p-1.5 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-primary" title="View Details"><span class="material-symbols-outlined text-lg">visibility</span></button>
+                            <a href="https://${shop.app_name}.fly.dev" target="_blank" class="p-1.5 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-primary" title="Visit Shop"><span class="material-symbols-outlined text-lg">open_in_new</span></a>
+                            <button onclick="confirmDelete(${shop.id})" class="p-1.5 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10 hover:text-destructive" title="Delete"><span class="material-symbols-outlined text-lg">delete</span></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterShops() {
+            const query = document.getElementById('shop-search').value.toLowerCase();
+            const filtered = allShops.filter(s => s.shop_name.toLowerCase().includes(query) || s.app_name.toLowerCase().includes(query));
+            renderShopTable(filtered);
+        }
+        
+        function confirmDelete(id) {
+            currentShopId = id;
+            handleDeleteShop();
+        }
+
         function getStatusColor(status) {
             if (status === 'active') return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
             if (status === 'creating') return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
-            if (status === 'failed') return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
-            return 'bg-gray-100 text-gray-800';
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
         }
 
-        // --- CREATE SHOP LOGIC ---
-        async function handleCreateShop(e) {
-            e.preventDefault();
-            const form = e.target;
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
-            
-            showLoading(true, "Provisioning your shop... This may take a moment.");
-            
-            try {
-                const res = await fetch('/api/shops', {
-                    method: 'POST', headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                const result = await res.json();
-                
-                if (res.ok) {
-                    alert('Shop creation initiated! You will be redirected to the dashboard.');
-                    form.reset();
-                    switchView('view-dashboard');
-                } else {
-                    throw new Error(result.error || 'Failed to create shop');
-                }
-            } catch (err) {
-                alert(err.message);
-            } finally {
-                showLoading(false);
-            }
+        // --- CREATE & DETAILS ---
+        async function handleCreateShop(e) { /* Same as before */ 
+            e.preventDefault(); const formData = new FormData(e.target); const data = Object.fromEntries(formData.entries());
+            showLoading(true, "Provisioning shop...");
+            try { const res = await fetch('/api/shops', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            const r = await res.json(); if(res.ok) { alert('Shop creation started!'); e.target.reset(); switchView('view-dashboard'); } else throw new Error(r.error);
+            } catch(err) { alert(err.message); } finally { showLoading(false); }
         }
 
-        // --- SHOP DETAILS LOGIC ---
-        async function openShopDetails(shopId) {
-            currentShopId = shopId;
-            showLoading(true, "Loading details...");
-            try {
-                const res = await fetch(`/api/shops/${shopId}/status`);
-                if (!res.ok) throw new Error("Failed to load shop");
-                const data = await res.json();
-                renderShopDetails(data.shop);
-                switchView('view-shop-details');
-            } catch (e) {
-                alert(e.message);
-            } finally {
-                showLoading(false);
-            }
+        async function openShopDetails(shopId) { /* Same as before */
+            currentShopId = shopId; showLoading(true);
+            try { const res = await fetch(`/api/shops/${shopId}/status`); if(!res.ok) throw new Error("Failed"); const d = await res.json(); renderShopDetails(d.shop); switchView('view-shop-details'); } catch(e) { alert(e.message); } finally { showLoading(false); }
         }
 
-        function renderShopDetails(shop) {
+        function renderShopDetails(shop) { /* Same as before */
             document.getElementById('detail-shop-name').textContent = shop.shop_name;
             document.getElementById('detail-shop-name-crumb').textContent = shop.shop_name;
             document.getElementById('detail-app-name').textContent = shop.app_name;
-            
-            const domain = shop.domain || `${shop.app_name}.fly.dev`;
-            document.getElementById('detail-domain').textContent = domain;
+            document.getElementById('detail-domain').textContent = shop.domain || `${shop.app_name}.fly.dev`;
             document.getElementById('detail-created').textContent = new Date(shop.created_at).toLocaleString();
-            
             document.getElementById('detail-shop-status').textContent = shop.status;
             document.getElementById('detail-shop-status').className = `px-2.5 py-0.5 rounded-full text-xs font-semibold ${getStatusColor(shop.status)}`;
-            
-            document.getElementById('detail-shop-link').href = `https://${domain}`;
-            document.getElementById('detail-admin-link').href = `https://${domain}/admin`;
+            document.getElementById('detail-shop-link').href = `https://${shop.domain || shop.app_name + '.fly.dev'}`;
+            document.getElementById('detail-admin-link').href = `https://${shop.domain || shop.app_name + '.fly.dev'}/admin`;
         }
 
-        async function handleDeleteShop() {
-            if (!confirm("Are you sure? This action cannot be undone.")) return;
-            showLoading(true, "Deleting...");
-            try {
-                const res = await fetch(`/api/shops/${currentShopId}`, { method: 'DELETE' });
-                if (res.ok) {
-                    alert('Shop deleted.');
-                    switchView('view-dashboard');
-                } else {
-                    alert('Failed to delete.');
-                }
-            } catch (e) { alert(e.message); }
-            finally { showLoading(false); }
+        async function handleDeleteShop() { /* Same as before */
+            if(!confirm("Delete this shop?")) return; showLoading(true);
+            try { const res = await fetch(`/api/shops/${currentShopId}`, {method:'DELETE'}); if(res.ok) { alert('Deleted'); switchView('view-dashboard'); } else alert('Failed'); } catch(e) { alert(e.message); } finally { showLoading(false); }
         }
 
-        // Initial Load
+        // Init
         checkAuth();
 
     </script>
