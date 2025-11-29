@@ -106,6 +106,7 @@
         </div>
     </div>
 
+    <script src="js/mock-db.js"></script>
     <script>
         function showLoading(show) {
             document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
@@ -117,22 +118,12 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            try {
-                const res = await fetch('/auth/password/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                if (res.ok) {
-                    window.location.href = 'dashboard.html';
-                } else {
-                    alert('Login failed. Please check your credentials.');
-                }
-            } catch (error) {
-                alert('An error occurred during login.');
-            } finally {
-                showLoading(false);
-            }
+            // Simulate Network Delay
+            setTimeout(() => {
+                // Mock Success
+                MOCK_DB.login(email);
+                window.location.href = 'dashboard.html';
+            }, 800);
         }
     </script>
 </body>

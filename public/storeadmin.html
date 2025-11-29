@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Platform Admin - DrSell</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#7c3aed", // Violet for Admin to distinguish from User Blue
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 }
+        .active-tab { background-color: rgba(124, 58, 237, 0.1); color: #7c3aed; }
+        .dark .active-tab { background-color: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full">
+    <!-- Admin Sidebar -->
+    <aside class="flex w-64 flex-col bg-white dark:bg-[#111418] border-r border-gray-200 dark:border-gray-800 p-4">
+        <div class="flex items-center gap-2 mb-8 px-2">
+            <span class="material-symbols-outlined text-primary text-3xl">admin_panel_settings</span>
+            <div class="flex flex-col">
+                <span class="text-xl font-bold text-gray-900 dark:text-white leading-none">DrSell</span>
+                <span class="text-xs font-medium text-primary uppercase tracking-wider mt-1">Platform Admin</span>
+            </div>
+        </div>
+        
+        <div class="flex flex-col gap-2 flex-1">
+            <button onclick="switchTab('overview')" id="nav-overview" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left active-tab">
+                <span class="material-symbols-outlined">dashboard</span>
+                <p class="text-sm font-medium" data-i18n="nav_overview">Overview</p>
+            </button>
+            <button onclick="switchTab('users')" id="nav-users" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left">
+                <span class="material-symbols-outlined">group</span>
+                <p class="text-sm font-medium" data-i18n="nav_users">User Management</p>
+            </button>
+            <button onclick="switchTab('shops')" id="nav-shops" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left">
+                <span class="material-symbols-outlined">storefront</span>
+                <p class="text-sm font-medium" data-i18n="nav_shops">All Shops</p>
+            </button>
+            <button onclick="switchTab('billing')" id="nav-billing" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left">
+                <span class="material-symbols-outlined">payments</span>
+                <p class="text-sm font-medium" data-i18n="nav_billing">Consumption & Billing</p>
+            </button>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-800 pt-4">
+            <button onclick="logout()" class="flex items-center gap-3 px-3 py-2 w-full rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+                <span class="material-symbols-outlined">logout</span>
+                <p class="text-sm font-medium" data-i18n="logout">Logout</p>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto h-screen">
+        <div class="p-8 max-w-7xl mx-auto">
+            
+            <!-- Header -->
+            <header class="flex flex-wrap justify-between items-center gap-4 mb-8">
+                <div>
+                    <h1 class="text-gray-900 dark:text-white text-3xl font-bold leading-tight" id="page-title">Overview</h1>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-1" id="page-subtitle">Platform-wide statistics and metrics.</p>
+                </div>
+                <button onclick="toggleLanguage()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-medium shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <span class="material-symbols-outlined text-base">language</span>
+                    <span id="lang-label">EN</span>
+                </button>
+            </header>
+
+            <!-- TAB: OVERVIEW -->
+            <div id="view-overview" class="view-section space-y-8">
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600"><span class="material-symbols-outlined">group</span></div>
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400" data-i18n="kpi_users">Total Users</h3>
+                        </div>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white" id="stat-users">1,248</p>
+                        <p class="text-xs text-green-500 flex items-center mt-1"><span class="material-symbols-outlined text-sm">trending_up</span> +12% this month</p>
+                    </div>
+                    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600"><span class="material-symbols-outlined">storefront</span></div>
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400" data-i18n="kpi_shops">Active Shops</h3>
+                        </div>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white" id="stat-shops">856</p>
+                        <p class="text-xs text-green-500 flex items-center mt-1"><span class="material-symbols-outlined text-sm">trending_up</span> +5% this month</p>
+                    </div>
+                    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-600"><span class="material-symbols-outlined">smart_toy</span></div>
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400" data-i18n="kpi_ai">AI Services</h3>
+                        </div>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white" id="stat-ai">320</p>
+                        <p class="text-xs text-gray-500 mt-1" data-i18n="kpi_ai_sub">Active subscriptions</p>
+                    </div>
+                    <div class="bg-white dark:bg-[#111418] p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg text-yellow-600"><span class="material-symbols-outlined">database</span></div>
+                            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400" data-i18n="kpi_credits">Credits Issued</h3>
+                        </div>
+                        <p class="text-3xl font-bold text-gray-900 dark:text-white" id="stat-credits">1.2M</p>
+                        <p class="text-xs text-gray-500 mt-1" data-i18n="kpi_credits_sub">Total lifetime</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: USERS -->
+            <div id="view-users" class="view-section hidden space-y-6">
+                <div class="bg-white dark:bg-[#111418] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-900 dark:text-white" data-i18n="table_users_title">Registered Accounts</h3>
+                        <input type="text" placeholder="Search email..." class="bg-gray-50 dark:bg-gray-800 border-none rounded-lg px-3 py-1.5 text-sm w-64 focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
+                                <tr>
+                                    <th class="px-6 py-3" data-i18n="col_user_id">ID</th>
+                                    <th class="px-6 py-3" data-i18n="col_email">Email</th>
+                                    <th class="px-6 py-3" data-i18n="col_joined">Joined</th>
+                                    <th class="px-6 py-3" data-i18n="col_shops_owned">Shops</th>
+                                    <th class="px-6 py-3" data-i18n="col_balance">Balance</th>
+                                    <th class="px-6 py-3 text-right" data-i18n="col_actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-users-body">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: SHOPS -->
+            <div id="view-shops" class="view-section hidden space-y-6">
+                <div class="bg-white dark:bg-[#111418] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                        <h3 class="font-bold text-gray-900 dark:text-white" data-i18n="table_shops_title">All Shops</h3>
+                        <div class="flex gap-2">
+                             <select class="bg-gray-50 dark:bg-gray-800 border-none rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-primary">
+                                <option value="all">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                            <input type="text" placeholder="Search shop..." class="bg-gray-50 dark:bg-gray-800 border-none rounded-lg px-3 py-1.5 text-sm w-64 focus:ring-2 focus:ring-primary">
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
+                                <tr>
+                                    <th class="px-6 py-3" data-i18n="col_shop_id">ID</th>
+                                    <th class="px-6 py-3" data-i18n="col_shop_name">Shop Name</th>
+                                    <th class="px-6 py-3" data-i18n="col_owner">Owner</th>
+                                    <th class="px-6 py-3" data-i18n="col_status">Status</th>
+                                    <th class="px-6 py-3" data-i18n="col_ai_features">AI Features</th>
+                                    <th class="px-6 py-3 text-right" data-i18n="col_actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-shops-body">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: BILLING -->
+            <div id="view-billing" class="view-section hidden space-y-6">
+                 <div class="bg-white dark:bg-[#111418] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-800">
+                        <h3 class="font-bold text-gray-900 dark:text-white" data-i18n="table_billing_title">Platform Consumption Logs</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
+                                <tr>
+                                    <th class="px-6 py-3" data-i18n="col_date">Date</th>
+                                    <th class="px-6 py-3" data-i18n="col_user">User</th>
+                                    <th class="px-6 py-3" data-i18n="col_action">Action</th>
+                                    <th class="px-6 py-3" data-i18n="col_amount">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-billing-body">
+                                <!-- JS Populated -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- Shop Detail Modal -->
+<div id="detail-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+    <div class="bg-white dark:bg-[#111418] p-8 rounded-2xl w-full max-w-2xl shadow-2xl relative">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6" id="modal-title">Shop Details</h3>
+        <div id="modal-content" class="space-y-4">
+            <!-- Populated via JS -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Mock Data Generator ---
+    function generateMockData() {
+        const users = Array.from({length: 15}, (_, i) => ({
+            id: i + 1,
+            email: `user${i+1}@example.com`,
+            joined: new Date(Date.now() - Math.floor(Math.random()*10000000000)).toISOString().split('T')[0],
+            credits: Math.floor(Math.random() * 5000),
+            shops_count: Math.floor(Math.random() * 3)
+        }));
+
+        const shops = users.flatMap(u => 
+            Array.from({length: u.shops_count}, (_, j) => ({
+                id: u.id * 100 + j,
+                name: `${u.email.split('@')[0]}'s Shop ${j+1}`,
+                app_name: `shop-${u.id}-${j}`,
+                owner: u.email,
+                status: Math.random() > 0.2 ? 'active' : 'inactive',
+                ai_enabled: Math.random() > 0.5,
+                created_at: u.joined
+            }))
+        );
+
+        const transactions = Array.from({length: 20}, (_, i) => ({
+            date: new Date(Date.now() - Math.floor(Math.random()*1000000000)).toISOString().split('T')[0],
+            user: users[Math.floor(Math.random() * users.length)].email,
+            action: Math.random() > 0.3 ? 'Shop Hosting Fee' : 'Credit Top-up',
+            amount: Math.random() > 0.3 ? -100 : 1000,
+            type: Math.random() > 0.3 ? 'debit' : 'credit'
+        })).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        return { users, shops, transactions };
+    }
+
+    const mockData = generateMockData();
+
+    // --- I18n ---
+    let currentLang = localStorage.getItem('preferredLang') || 'en';
+    const translations = {
+        en: {
+            nav_overview: "Overview",
+            nav_users: "User Management",
+            nav_shops: "All Shops",
+            nav_billing: "Consumption & Billing",
+            logout: "Logout",
+            kpi_users: "Total Users",
+            kpi_shops: "Active Shops",
+            kpi_ai: "AI Services",
+            kpi_ai_sub: "Active subscriptions",
+            kpi_credits: "Credits Issued",
+            kpi_credits_sub: "Total lifetime",
+            table_users_title: "Registered Accounts",
+            col_user_id: "ID",
+            col_email: "Email",
+            col_joined: "Joined",
+            col_shops_owned: "Shops",
+            col_balance: "Balance",
+            col_actions: "Actions",
+            btn_view_shops: "View Shops",
+            table_shops_title: "All Shops",
+            col_shop_id: "ID",
+            col_shop_name: "Shop Name",
+            col_owner: "Owner",
+            col_status: "Status",
+            col_ai_features: "AI Features",
+            btn_manage: "Manage",
+            table_billing_title: "Platform Consumption Logs",
+            col_date: "Date",
+            col_user: "User",
+            col_action: "Action",
+            col_amount: "Amount",
+            status_active: "Active",
+            status_inactive: "Inactive",
+            status_ai_on: "Enabled",
+            status_ai_off: "Disabled",
+            page_title_overview: "Overview",
+            page_subtitle_overview: "Platform-wide statistics and metrics.",
+            page_title_users: "User Management",
+            page_subtitle_users: "Manage all registered user accounts.",
+            page_title_shops: "Shop Management",
+            page_subtitle_shops: "Oversee all shops hosted on the platform.",
+            page_title_billing: "Billing Logs",
+            page_subtitle_billing: "Track platform-wide credit usage and revenue.",
+            modal_shop_details: "Shop Details",
+            modal_owner: "Owner:",
+            modal_status: "Status:",
+            modal_created: "Created:",
+            modal_app_url: "App URL:",
+            modal_ai_status: "AI Status:"
+        },
+        zh: {
+            nav_overview: "总览",
+            nav_users: "用户管理",
+            nav_shops: "所有店铺",
+            nav_billing: "消费与账单",
+            logout: "登出",
+            kpi_users: "总用户数",
+            kpi_shops: "活跃店铺",
+            kpi_ai: "AI 服务",
+            kpi_ai_sub: "活跃订阅数",
+            kpi_credits: "已发点数",
+            kpi_credits_sub: "历史累计",
+            table_users_title: "注册账户",
+            col_user_id: "ID",
+            col_email: "邮箱",
+            col_joined: "加入时间",
+            col_shops_owned: "店铺数",
+            col_balance: "余额",
+            col_actions: "操作",
+            btn_view_shops: "查看店铺",
+            table_shops_title: "所有店铺",
+            col_shop_id: "ID",
+            col_shop_name: "店铺名称",
+            col_owner: "所有者",
+            col_status: "状态",
+            col_ai_features: "AI 功能",
+            btn_manage: "管理",
+            table_billing_title: "平台消费日志",
+            col_date: "日期",
+            col_user: "用户",
+            col_action: "操作",
+            col_amount: "金额",
+            status_active: "活跃",
+            status_inactive: "停用",
+            status_ai_on: "已启用",
+            status_ai_off: "未启用",
+            page_title_overview: "总览",
+            page_subtitle_overview: "平台整体统计与指标。",
+            page_title_users: "用户管理",
+            page_subtitle_users: "管理所有注册用户账户。",
+            page_title_shops: "店铺管理",
+            page_subtitle_shops: "监管平台托管的所有店铺。",
+            page_title_billing: "账单日志",
+            page_subtitle_billing: "追踪全平台点数消耗与营收。",
+            modal_shop_details: "店铺详情",
+            modal_owner: "所有者：",
+            modal_status: "状态：",
+            modal_created: "创建时间：",
+            modal_app_url: "应用链接：",
+            modal_ai_status: "AI 状态："
+        }
+    };
+
+    function _t(key) { return translations[currentLang][key] || key; }
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'en' ? 'zh' : 'en';
+        localStorage.setItem('preferredLang', currentLang);
+        updateUI();
+    }
+
+    function updateUI() {
+        document.getElementById('lang-label').textContent = currentLang === 'en' ? 'EN' : '中';
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            el.textContent = _t(key);
+        });
+        
+        // Update Titles based on active tab
+        const activeTab = document.querySelector('.active-tab').id.replace('nav-', '');
+        updateHeader(activeTab);
+        
+        // Re-render Tables to update translations inside rows
+        renderUsers();
+        renderShops();
+        renderBilling();
+    }
+    
+    function updateHeader(tabId) {
+        document.getElementById('page-title').textContent = _t(`page_title_${tabId}`);
+        document.getElementById('page-subtitle').textContent = _t(`page_subtitle_${tabId}`);
+    }
+
+    // --- Tab Switching ---
+    function switchTab(tabId) {
+        // Hide all views
+        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+        document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+        // Update Nav
+        document.querySelectorAll('aside button').forEach(el => el.classList.remove('active-tab'));
+        document.getElementById(`nav-${tabId}`).classList.add('active-tab');
+
+        // Update Header Text
+        updateHeader(tabId);
+    }
+
+    // --- Render Functions ---
+    function renderUsers() {
+        const tbody = document.getElementById('table-users-body');
+        tbody.innerHTML = mockData.users.map(u => `
+            <tr class="bg-white dark:bg-transparent border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td class="px-6 py-4 font-mono text-xs">${u.id}</td>
+                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${u.email}</td>
+                <td class="px-6 py-4">${u.joined}</td>
+                <td class="px-6 py-4">${u.shops_count}</td>
+                <td class="px-6 py-4 font-mono">${u.credits}</td>
+                <td class="px-6 py-4 text-right">
+                    <button class="text-primary hover:underline text-xs font-bold" onclick="filterShopsByUser('${u.email}')">${_t('btn_view_shops')}</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderShops() {
+        const tbody = document.getElementById('table-shops-body');
+        tbody.innerHTML = mockData.shops.map(s => {
+            const statusColor = s.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+            const aiBadge = s.ai_enabled 
+                ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300">AI</span>` 
+                : `<span class="text-gray-400">-</span>`;
+            
+            return `
+            <tr class="bg-white dark:bg-transparent border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td class="px-6 py-4 font-mono text-xs">${s.id}</td>
+                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">${s.name}</td>
+                <td class="px-6 py-4 text-xs">${s.owner}</td>
+                <td class="px-6 py-4"><span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">${_t('status_'+s.status)}</span></td>
+                <td class="px-6 py-4">${aiBadge}</td>
+                <td class="px-6 py-4 text-right">
+                    <button class="text-primary hover:underline text-xs font-bold" onclick='openShopModal(${JSON.stringify(s)})'>${_t('btn_manage')}</button>
+                </td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    function renderBilling() {
+        const tbody = document.getElementById('table-billing-body');
+        tbody.innerHTML = mockData.transactions.map(t => {
+            const isCredit = t.type === 'credit';
+            const color = isCredit ? 'text-green-600' : 'text-red-600';
+            const sign = isCredit ? '+' : '';
+            return `
+            <tr class="bg-white dark:bg-transparent border-b dark:border-gray-800">
+                <td class="px-6 py-4 whitespace-nowrap">${t.date}</td>
+                <td class="px-6 py-4">${t.user}</td>
+                <td class="px-6 py-4">${t.action}</td>
+                <td class="px-6 py-4 font-mono ${color}">${sign}${t.amount}</td>
+            </tr>
+            `;
+        }).join('');
+    }
+
+    // --- Actions ---
+    function filterShopsByUser(email) {
+        switchTab('shops');
+        // Simple client-side search simulation
+        const input = document.querySelector('#view-shops input[type="text"]');
+        input.value = email;
+        // In a real app, trigger filter logic here. 
+        // For this static prototype, we just switch tabs and pre-fill search.
+        alert(`Filtered view for ${email} (Search pre-filled)`);
+    }
+
+    function openShopModal(shop) {
+        const modal = document.getElementById('detail-modal');
+        const content = document.getElementById('modal-content');
+        document.getElementById('modal-title').textContent = shop.name;
+        
+        content.innerHTML = `
+            <div class="grid grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-300">
+                <div>
+                    <span class="font-bold block text-gray-500 dark:text-gray-400 text-xs uppercase mb-1">${_t('modal_owner')}</span>
+                    ${shop.owner}
+                </div>
+                <div>
+                    <span class="font-bold block text-gray-500 dark:text-gray-400 text-xs uppercase mb-1">${_t('modal_created')}</span>
+                    ${shop.created_at}
+                </div>
+                <div>
+                    <span class="font-bold block text-gray-500 dark:text-gray-400 text-xs uppercase mb-1">${_t('modal_status')}</span>
+                    <span class="uppercase font-medium">${_t('status_'+shop.status)}</span>
+                </div>
+                <div>
+                    <span class="font-bold block text-gray-500 dark:text-gray-400 text-xs uppercase mb-1">${_t('modal_ai_status')}</span>
+                    ${shop.ai_enabled ? _t('status_ai_on') : _t('status_ai_off')}
+                </div>
+                <div class="col-span-2 bg-gray-50 dark:bg-gray-800 p-3 rounded">
+                    <span class="font-bold block text-gray-500 dark:text-gray-400 text-xs uppercase mb-1">${_t('modal_app_url')}</span>
+                    <a href="https://${shop.app_name}.fly.dev" target="_blank" class="text-primary hover:underline">https://${shop.app_name}.fly.dev</a>
+                </div>
+            </div>
+        `;
+        
+        modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('detail-modal').classList.add('hidden');
+    }
+
+    async function logout() {
+         window.location.href = '/login.html';
+    }
+
+    // Init
+    updateUI();
+</script>
+</body>
+</html>

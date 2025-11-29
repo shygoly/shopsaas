@@ -63,6 +63,21 @@ app.get('/dashboard', (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
+// Shops page
+app.get('/shops', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/shops.html'));
+});
+
+// Billing page
+app.get('/billing', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/billing.html'));
+});
+
+// AI Assistant page
+app.get('/ai-assistant', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/ai-assistant.html'));
+});
+
 // Session configuration
 const PgSession = pgSession(session);
 app.use(session({

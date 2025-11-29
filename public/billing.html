@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Credits &amp; Billing - DrSell</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="relative flex min-h-screen w-full">
+    <!-- SideNavBar (Simplified from Dashboard) -->
+    <aside class="flex w-64 flex-col bg-white dark:bg-[#111418] border-r border-gray-200 dark:border-gray-800 p-4">
+        <div class="flex items-center gap-2 mb-8 cursor-pointer" onclick="window.location.href='/'">
+            <span class="material-symbols-outlined text-primary text-3xl">store</span>
+            <span class="text-2xl font-bold text-gray-900 dark:text-white">DrSell</span>
+        </div>
+        <div class="flex flex-col gap-4 flex-1">
+            <div class="flex flex-col gap-2">
+                <a class="flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="/dashboard">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <p class="text-sm font-medium" data-i18n="nav_dashboard">Dashboard</p>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="/shops">
+                    <span class="material-symbols-outlined">storefront</span>
+                    <p class="text-sm font-medium" data-i18n="nav_shops">Shops</p>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary" href="/billing">
+                    <span class="material-symbols-outlined">credit_card</span>
+                    <p class="text-sm font-medium" data-i18n="nav_billing">Billing</p>
+                </a>
+                <a class="flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg" href="/ai-assistant">
+                    <span class="material-symbols-outlined">smart_toy</span>
+                    <p class="text-sm font-medium" data-i18n="nav_ai_assistant">AI Assistant</p>
+                </a>
+            </div>
+        </div>
+        <div class="flex gap-3 items-center border-t border-gray-200 dark:border-gray-800 pt-4">
+            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style='background-image: url("media/dashboard-avatar.png");'></div>
+            <div class="flex flex-col overflow-hidden">
+                <h1 id="user-name-display" class="text-gray-900 dark:text-white text-base font-medium leading-normal truncate">User</h1>
+                <p id="user-email-display" class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal truncate">loading...</p>
+            </div>
+             <button onclick="logout()" class="ml-auto text-gray-500 hover:text-red-500" title="Logout">
+                <span class="material-symbols-outlined" data-i18n-title="logout_title">logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto">
+        <div class="p-8">
+            <div class="max-w-7xl mx-auto">
+                <!-- PageHeading -->
+                <header class="flex flex-wrap justify-between gap-3 mb-8">
+                    <div class="flex min-w-72 flex-col gap-2">
+                        <h1 class="text-gray-900 dark:text-white text-4xl font-black leading-tight tracking-[-0.033em]" data-i18n="billing_title">Credits & Billing</h1>
+                        <p class="text-gray-500 dark:text-gray-400 text-base font-normal leading-normal" data-i18n="billing_subtitle">Manage your credits, view transaction history, and oversee your AI service subscriptions.</p>
+                    </div>
+                    <button onclick="toggleLanguage()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors h-fit self-start">
+                        <span class="material-symbols-outlined text-base">language</span>
+                        <span id="lang-label">EN</span>
+                    </button>
+                </header>
+
+                <!-- Credit Balance Summary -->
+                <section class="mb-10">
+                    <div class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                        <div class="flex flex-col gap-2">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm font-normal" data-i18n="current_balance">Current Balance</p>
+                            <p id="current-balance" class="text-gray-900 dark:text-white text-5xl font-bold tracking-[-0.02em]">-</p>
+                            <p class="text-gray-500 dark:text-gray-400 text-base font-normal" data-i18n="available_credits_desc">Your Available Credit Balance</p>
+                        </div>
+                        <button onclick="buyCredits(1000)" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+                            <span class="truncate" data-i18n="btn_add_credits">Add 1000 Credits (¥100)</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Pricing Information -->
+                <section class="mb-10">
+                     <header class="flex justify-between items-center mb-4">
+                        <h2 class="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]" data-i18n="service_costs_title">Service Costs</h2>
+                    </header>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-[#111418] rounded-xl p-6 border border-gray-200 dark:border-gray-800 flex flex-col shadow-sm">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-primary">
+                                    <span class="material-symbols-outlined">storefront</span>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white" data-i18n="cost_shop_hosting">Shop Hosting</h3>
+                            </div>
+                             <p class="text-gray-500 dark:text-gray-400 text-sm mb-4" data-i18n="cost_shop_desc">Base cost for keeping your shop online and accessible globally.</p>
+                            <div class="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">100 <span class="text-base font-normal text-gray-500 dark:text-gray-400" data-i18n="credits_per_month">credits/mo</span></p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-[#111418] rounded-xl p-6 border border-gray-200 dark:border-gray-800 flex flex-col shadow-sm">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="bg-green-100 dark:bg-green-900/30 p-2 rounded-lg text-green-600">
+                                    <span class="material-symbols-outlined">smart_toy</span>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white" data-i18n="cost_ai_assistant">AI Assistant</h3>
+                            </div>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm mb-4" data-i18n="cost_ai_desc">24/7 automated customer support and smart product recommendations.</p>
+                            <div class="mt-auto pt-4 border-t border-gray-100 dark:border-gray-800">
+                                <p class="text-2xl font-bold text-gray-900 dark:text-white">50 <span class="text-base font-normal text-gray-500 dark:text-gray-400" data-i18n="credits_per_month">credits/mo</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Transaction History -->
+                <section class="mb-10">
+                    <header class="flex justify-between items-center mb-4">
+                        <h2 class="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em]" data-i18n="transaction_history">Transaction History</h2>
+                    </header>
+                    <!-- Data Table -->
+                    <div class="bg-white dark:bg-[#111418] rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400">
+                                <tr>
+                                    <th class="px-6 py-3" scope="col" data-i18n="col_date">Date</th>
+                                    <th class="px-6 py-3" scope="col" data-i18n="col_type">Type</th>
+                                    <th class="px-6 py-3" scope="col" data-i18n="col_description">Description</th>
+                                    <th class="px-6 py-3 text-right" scope="col" data-i18n="col_amount">Amount</th>
+                                </tr>
+                                </thead>
+                                <tbody id="transaction-list">
+                                    <!-- Dynamic content will be inserted here -->
+                                    <tr class="bg-white dark:bg-transparent border-b dark:border-gray-800">
+                                        <td colspan="4" class="px-6 py-8 text-center text-gray-500" data-i18n="loading_transactions">Loading transactions...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // --- I18n Configuration ---
+    let currentLang = localStorage.getItem('preferredLang') || 'en';
+    
+    const translations = {
+        en: {
+            nav_dashboard: "Dashboard",
+            nav_shops: "Shops",
+            nav_billing: "Billing",
+            nav_ai_assistant: "AI Assistant",
+            logout_title: "Logout",
+            billing_title: "Credits & Billing",
+            billing_subtitle: "Manage your credits, view transaction history, and oversee your AI service subscriptions.",
+            current_balance: "Current Balance",
+            available_credits_desc: "Your Available Credit Balance",
+            btn_add_credits: "Add 1000 Credits (¥100)",
+            service_costs_title: "Service Costs",
+            cost_shop_hosting: "Shop Hosting",
+            cost_shop_desc: "Base cost for keeping your shop online and accessible globally.",
+            cost_ai_assistant: "AI Assistant",
+            cost_ai_desc: "24/7 automated customer support and smart product recommendations.",
+            credits_per_month: "credits/mo",
+            transaction_history: "Transaction History",
+            col_date: "Date",
+            col_type: "Type",
+            col_description: "Description",
+            col_amount: "Amount",
+            type_debit: "Debit",
+            type_credit: "Credit",
+            loading_transactions: "Loading transactions...",
+            no_transactions: "No transactions found.",
+            alert_purchase_success: "Successfully purchased 1000 credits!",
+            alert_purchase_failed: "Purchase failed."
+        },
+        zh: {
+            nav_dashboard: "仪表盘",
+            nav_shops: "店铺管理",
+            nav_billing: "计费中心",
+            nav_ai_assistant: "AI 助手",
+            logout_title: "登出",
+            billing_title: "充值与账单",
+            billing_subtitle: "管理您的点数，查看交易历史记录以及管理 AI 服务订阅。",
+            current_balance: "当前余额",
+            available_credits_desc: "您的可用点数余额",
+            btn_add_credits: "充值 1000 点数 (¥100)",
+            service_costs_title: "服务资费",
+            cost_shop_hosting: "店铺托管",
+            cost_shop_desc: "保持店铺在线和全球访问的基础费用。",
+            cost_ai_assistant: "AI 智能助手",
+            cost_ai_desc: "24/7 自动客户支持和智能产品推荐。",
+            credits_per_month: "点数/月",
+            transaction_history: "交易历史",
+            col_date: "日期",
+            col_type: "类型",
+            col_description: "描述",
+            col_amount: "金额",
+            type_debit: "扣除",
+            type_credit: "充值",
+            loading_transactions: "加载交易记录中...",
+            no_transactions: "暂无交易记录。",
+            alert_purchase_success: "成功充值 1000 点数！",
+            alert_purchase_failed: "充值失败。"
+        }
+    };
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'en' ? 'zh' : 'en';
+        localStorage.setItem('preferredLang', currentLang);
+        updateContent();
+    }
+
+    function updateContent() {
+        document.title = _t('billing_title') + " - DrSell";
+        document.getElementById('lang-label').textContent = currentLang === 'en' ? 'EN' : '中';
+        
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[currentLang][key]) {
+                el.textContent = translations[currentLang][key];
+            }
+        });
+        
+        // Refresh table to update translated labels
+        const transactions = MOCK_DB.getTransactions();
+        renderTransactions(transactions);
+    }
+
+    function _t(key) {
+        return translations[currentLang][key] || key;
+    }
+
+    // --- State & Logic ---
+
+    async function ensureAuth() {
+        try {
+            const response = await fetch('/api/user');
+            if (!response.ok) {
+                window.location.href = '/login.html';
+                return;
+            }
+            const user = await response.json();
+            document.getElementById('user-email-display').textContent = user.email;
+            document.getElementById('user-name-display').textContent = user.name || user.email.split('@')[0];
+
+            fetchBilling();
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            window.location.href = '/login.html';
+        }
+    }
+
+    async function fetchBilling() {
+        try {
+            // Get billing summary
+            const response = await fetch('/api/billing/summary');
+            if (!response.ok) throw new Error('Failed to fetch billing summary');
+            const summary = await response.json();
+
+            document.getElementById('current-balance').textContent = summary.credits || 0;
+
+            // Get transaction history
+            const transResponse = await fetch('/api/billing/transactions');
+            if (!transResponse.ok) throw new Error('Failed to fetch transactions');
+            const transactions = await transResponse.json();
+
+            renderTransactions(transactions);
+        } catch (error) {
+            console.error('Error fetching billing:', error);
+            document.getElementById('current-balance').textContent = '0';
+            renderTransactions([]);
+        }
+    }
+
+    async function buyCredits(amount) {
+        try {
+            const response = await fetch('/api/billing/grant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount })
+            });
+            if (!response.ok) throw new Error('Purchase failed');
+
+            fetchBilling();
+            alert(_t('alert_purchase_success'));
+        } catch (error) {
+            console.error('Purchase error:', error);
+            alert(_t('alert_purchase_failed'));
+        }
+    }
+    
+    function renderTransactions(transactions) {
+        const tbody = document.getElementById('transaction-list');
+        if (!transactions || transactions.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">${_t('no_transactions')}</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = transactions.map(t => {
+            const isCredit = t.type === 'credit' || t.amount > 0;
+            const typeLabel = isCredit ? _t('type_credit') : _t('type_debit');
+            const typeClass = isCredit 
+                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' 
+                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+            const icon = isCredit ? 'add' : 'remove';
+            const amountClass = isCredit ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+            const sign = isCredit ? '+' : '';
+            
+            return `
+            <tr class="bg-white dark:bg-transparent border-b dark:border-gray-800">
+                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">${t.date}</td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1.5 py-1 px-2 rounded-full text-xs font-medium ${typeClass}">
+                        <span class="material-symbols-outlined text-sm">${icon}</span> ${typeLabel}
+                    </span>
+                </td>
+                <td class="px-6 py-4">${t.description}</td>
+                <td class="px-6 py-4 text-right font-mono ${amountClass}">${sign}${t.amount}</td>
+            </tr>
+            `;
+        }).join('');
+    }
+    
+    async function logout() {
+        try {
+            await fetch('/auth/logout', { method: 'POST' });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+        window.location.href = '/login.html';
+    }
+
+    // Init
+    (async function init() {
+        await ensureAuth(); // Load data
+        updateContent(); // Initial render of static text
+    })();
+</script>
+</body>
+</html>

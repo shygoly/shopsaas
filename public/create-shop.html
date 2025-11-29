@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Create New Shop - DrSell</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4A90E2",
+                        "background-light": "#F8F9FA",
+                        "background-dark": "#101922",
+                        "accent": "#50E3C2",
+                        "error": "#D0021B",
+                        "text-primary": "#333333",
+                        "text-secondary": "#666666",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light dark:bg-background-dark text-text-primary dark:text-gray-200">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+    <div class="layout-container flex h-full grow flex-col">
+        <div class="px-4 sm:px-6 lg:px-8 py-5">
+            <div class="layout-content-container mx-auto flex max-w-7xl flex-col flex-1 gap-8">
+                <!-- Breadcrumbs & Page Heading -->
+                <header>
+                    <div class="flex flex-wrap items-center justify-between py-2">
+                        <div class="flex gap-2">
+                            <a class="text-text-secondary dark:text-gray-400 text-sm font-medium leading-normal hover:text-primary dark:hover:text-primary" href="dashboard.html" data-i18n="my_shops">My Shops</a>
+                            <span class="text-text-secondary dark:text-gray-400 text-sm font-medium leading-normal">/</span>
+                            <span class="text-text-primary dark:text-white text-sm font-medium leading-normal" data-i18n="create_new_shop_title">Create New Shop</span>
+                        </div>
+                        <button onclick="toggleLanguage()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                            <span class="material-symbols-outlined text-base">language</span>
+                            <span id="lang-label">EN</span>
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap justify-between gap-3 pt-4">
+                        <div class="flex min-w-72 flex-col gap-2">
+                            <h1 class="text-text-primary dark:text-white text-3xl font-bold leading-tight tracking-tight" data-i18n="create_shop_headline">Create Your New E-commerce Shop</h1>
+                            <p class="text-text-secondary dark:text-gray-400 text-base font-normal leading-normal" data-i18n="create_shop_subheadline">Fill in the details below to get started. You can change these settings later.</p>
+                        </div>
+                    </div>
+                </header>
+                <!-- Main Content: Two-Column Layout -->
+                <main class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                    <!-- Left Column: Form -->
+                    <div class="lg:col-span-3 flex flex-col gap-8">
+                        <!-- Shop Details Section -->
+                        <div class="bg-white dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700/50">
+                            <h2 class="text-text-primary dark:text-white text-lg font-bold leading-tight tracking-tight pb-6" data-i18n="section_shop_details">Shop Details</h2>
+                            <div class="flex flex-col gap-6">
+                                <label class="flex flex-col flex-1">
+                                    <p class="text-text-secondary dark:text-gray-300 text-sm font-medium leading-normal pb-2" data-i18n="label_shop_name">Shop Name</p>
+                                    <input id="shop_name" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 h-12 placeholder:text-gray-400 px-4 text-base font-normal leading-normal" placeholder="e.g. My Awesome Store" value=""/>
+                                </label>
+                                
+                                <label class="flex flex-col flex-1">
+                                    <p class="text-text-secondary dark:text-gray-300 text-sm font-medium leading-normal pb-2" data-i18n="label_admin_email">Admin Email</p>
+                                    <input id="admin_email" type="email" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 h-12 placeholder:text-gray-400 px-4 text-base font-normal leading-normal" placeholder="admin@yourstore.com" value=""/>
+                                </label>
+
+                                <label class="flex flex-col flex-1">
+                                    <p class="text-text-secondary dark:text-gray-300 text-sm font-medium leading-normal pb-2" data-i18n="label_admin_password">Admin Password</p>
+                                    <input id="admin_password" type="password" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 h-12 placeholder:text-gray-400 px-4 text-base font-normal leading-normal" placeholder="••••••••" value=""/>
+                                </label>
+
+                                <label class="flex flex-col flex-1">
+                                    <div class="flex items-center gap-1 pb-2">
+                                        <p class="text-text-secondary dark:text-gray-300 text-sm font-medium leading-normal" data-i18n="label_shop_url">Shop URL</p>
+                                        <span class="material-symbols-outlined text-sm text-gray-400 cursor-help" title="This will be your shop's unique address on DrSell.">help</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input id="shop_url_prefix" class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-l-lg text-text-primary dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-r-0 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 h-12 placeholder:text-gray-400 px-4 text-base font-normal leading-normal" placeholder="your-shop-name" value=""/>
+                                        <span class="flex items-center h-12 px-4 bg-gray-100 dark:bg-gray-800 text-text-secondary dark:text-gray-400 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-lg text-sm">.fly.dev</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Theme Selection Section -->
+                        <div class="bg-white dark:bg-gray-800/50 p-6 rounded-xl border border-gray-200 dark:border-gray-700/50">
+                            <h2 class="text-text-primary dark:text-white text-lg font-bold leading-tight tracking-tight pb-6" data-i18n="section_theme_selection">Select a starting theme for your shop</h2>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <!-- Theme Card 1 (Vitalis) -->
+                                <div onclick="selectTheme('vitalis')" id="theme-card-vitalis" class="theme-card group cursor-pointer rounded-lg border-2 border-primary bg-white dark:bg-gray-700 p-3 relative shadow-sm transition-all">
+                                    <div class="check-icon absolute -top-3 -right-3 bg-primary text-white rounded-full h-6 w-6 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-base">check</span>
+                                    </div>
+                                    <div class="overflow-hidden rounded-md mb-3">
+                                        <img class="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105" src="media/create-shop-theme-vitalis.png" alt="Vitalis Theme"/>
+                                    </div>
+                                    <h3 class="font-bold text-text-primary dark:text-white">Vitalis</h3>
+                                    <p class="text-sm text-text-secondary dark:text-gray-400" data-i18n="theme_desc_vitalis">Clean and professional for health products.</p>
+                                </div>
+                                <!-- Theme Card 2 (Momentum) -->
+                                <div onclick="selectTheme('momentum')" id="theme-card-momentum" class="theme-card group cursor-pointer rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 hover:border-primary/70 transition-all">
+                                    <div class="check-icon absolute -top-3 -right-3 bg-primary text-white rounded-full h-6 w-6 flex items-center justify-center hidden">
+                                        <span class="material-symbols-outlined text-base">check</span>
+                                    </div>
+                                    <div class="overflow-hidden rounded-md mb-3">
+                                        <img class="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105" src="media/create-shop-theme-momentum.png" alt="Momentum Theme"/>
+                                    </div>
+                                    <h3 class="font-bold text-text-primary dark:text-white">Momentum</h3>
+                                    <p class="text-sm text-text-secondary dark:text-gray-400" data-i18n="theme_desc_momentum">Dynamic and energetic for sports apparel.</p>
+                                </div>
+                                <!-- Theme Card 3 (Aura) -->
+                                <div onclick="selectTheme('aura')" id="theme-card-aura" class="theme-card group cursor-pointer rounded-lg border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 p-3 hover:border-primary/70 transition-all">
+                                    <div class="check-icon absolute -top-3 -right-3 bg-primary text-white rounded-full h-6 w-6 flex items-center justify-center hidden">
+                                        <span class="material-symbols-outlined text-base">check</span>
+                                    </div>
+                                    <div class="overflow-hidden rounded-md mb-3">
+                                        <img class="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-105" src="media/create-shop-theme-aura.png" alt="Aura Theme"/>
+                                    </div>
+                                    <h3 class="font-bold text-text-primary dark:text-white">Aura</h3>
+                                    <p class="text-sm text-text-secondary dark:text-gray-400" data-i18n="theme_desc_aura">Elegant and soft for skin-care and cosmetics.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center justify-end gap-3 pt-4">
+                            <button onclick="window.location.href='dashboard.html'" class="px-5 py-3 rounded-lg text-sm font-semibold text-text-secondary dark:text-gray-300 bg-gray-200/80 dark:bg-gray-700 hover:bg-gray-300/80 dark:hover:bg-gray-600 transition-colors" data-i18n="btn_cancel">Cancel</button>
+                            <button onclick="createShop()" id="btn-create-shop" class="px-5 py-3 rounded-lg text-sm font-semibold text-white bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-lg">storefront</span>
+                                <span data-i18n="btn_create_shop">Create Shop</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Live Preview -->
+                    <aside class="lg:col-span-2 hidden lg:block">
+                        <div class="sticky top-8">
+                            <p class="text-sm font-medium text-text-secondary dark:text-gray-400 pb-2" data-i18n="live_preview_label">Live Theme Preview</p>
+                            <div class="w-full h-[600px] bg-white dark:bg-gray-800/50 rounded-xl shadow-md border border-gray-200 dark:border-gray-700/50 overflow-hidden flex flex-col">
+                                <div class="bg-gray-100 dark:bg-gray-800 p-2 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700/50 shrink-0">
+                                    <div class="flex gap-1.5">
+                                        <span class="w-3 h-3 bg-red-400 rounded-full"></span>
+                                        <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
+                                        <span class="w-3 h-3 bg-green-400 rounded-full"></span>
+                                    </div>
+                                    <div class="flex-1 bg-white dark:bg-gray-700 rounded text-center py-1 text-sm text-gray-500 dark:text-gray-400 truncate px-2" id="preview-url">your-shop.fly.dev</div>
+                                    <span class="material-symbols-outlined text-gray-400 text-sm">refresh</span>
+                                </div>
+                                <div class="relative flex-1 bg-gray-50 dark:bg-gray-900 overflow-hidden group">
+                                    <img id="preview-image" class="w-full h-full object-cover object-top transition-all duration-1000 ease-in-out group-hover:object-bottom" src="media/create-shop-live-preview.png" alt="Theme Preview"/>
+                                    <!-- Overlay for interactivity hint -->
+                                    <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors pointer-events-none"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </main>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/mock-db.js"></script>
+<script>
+    // --- State ---
+    let selectedTheme = 'vitalis';
+    let currentLang = localStorage.getItem('preferredLang') || 'en';
+
+    const translations = {
+        en: {
+            my_shops: "My Shops",
+            create_new_shop_title: "Create New Shop",
+            create_shop_headline: "Create Your New E-commerce Shop",
+            create_shop_subheadline: "Fill in the details below to get started. You can change these settings later.",
+            section_shop_details: "Shop Details",
+            label_shop_name: "Shop Name",
+            label_admin_email: "Admin Email",
+            label_admin_password: "Admin Password",
+            label_shop_url: "Shop URL",
+            section_theme_selection: "Select a starting theme for your shop",
+            theme_desc_vitalis: "Clean and professional for health products.",
+            theme_desc_momentum: "Dynamic and energetic for sports apparel.",
+            theme_desc_aura: "Elegant and soft for skin-care and cosmetics.",
+            btn_cancel: "Cancel",
+            btn_create_shop: "Create Shop",
+            live_preview_label: "Live Theme Preview",
+            alert_fill_fields: "Please fill in all fields.",
+            alert_creation_started: "Shop creation started! Redirecting to dashboard...",
+            alert_create_failed: "Create failed: ",
+            alert_insufficient_credits: "Insufficient credits! (100 credits required)"
+        },
+        zh: {
+            my_shops: "我的店铺",
+            create_new_shop_title: "创建新店铺",
+            create_shop_headline: "创建您的新电商网站",
+            create_shop_subheadline: "填写以下详细信息以开始。您稍后可以更改这些设置。",
+            section_shop_details: "店铺详情",
+            label_shop_name: "店铺名称",
+            label_admin_email: "管理员邮箱",
+            label_admin_password: "管理员密码",
+            label_shop_url: "店铺网址",
+            section_theme_selection: "选择店铺初始主题",
+            theme_desc_vitalis: "干净专业，适合健康产品。",
+            theme_desc_momentum: "动感活力，适合运动服饰。",
+            theme_desc_aura: "优雅柔和，适合护肤品和化妆品。",
+            btn_cancel: "取消",
+            btn_create_shop: "创建店铺",
+            live_preview_label: "主题实时预览",
+            alert_fill_fields: "请填写所有字段。",
+            alert_creation_started: "店铺创建已开始！正在跳转回仪表盘...",
+            alert_create_failed: "创建失败：",
+            alert_insufficient_credits: "点数不足！(需要 100 点数)"
+        }
+    };
+
+    // --- I18n Functions ---
+    function toggleLanguage() {
+        currentLang = currentLang === 'en' ? 'zh' : 'en';
+        localStorage.setItem('preferredLang', currentLang);
+        updateContent();
+    }
+
+    function updateContent() {
+        document.title = _t('create_new_shop_title') + " - DrSell";
+        document.getElementById('lang-label').textContent = currentLang === 'en' ? 'EN' : '中';
+        
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[currentLang][key]) {
+                el.textContent = translations[currentLang][key];
+            }
+        });
+
+        const nameInput = document.getElementById('shop_name');
+        if(currentLang === 'zh') nameInput.placeholder = "例如：我的超级商店";
+        else nameInput.placeholder = "e.g. My Awesome Store";
+    }
+
+    function _t(key) {
+        return translations[currentLang][key] || key;
+    }
+
+    // --- Logic ---
+
+    // Initialize Page
+    (async function init() {
+        updateContent();
+        
+        const user = MOCK_DB.getCurrentUser();
+        if (user) {
+            document.getElementById('admin_email').value = user.email;
+        } else {
+            // Not logged in, redirect for safety
+            // window.location.href = 'login.html'; 
+        }
+
+        // Auto-generate URL slug from Shop Name
+        document.getElementById('shop_name').addEventListener('input', function(e) {
+            const slug = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            document.getElementById('shop_url_prefix').value = slug;
+            updatePreviewUrl(slug);
+        });
+
+        document.getElementById('shop_url_prefix').addEventListener('input', function(e) {
+            updatePreviewUrl(e.target.value);
+        });
+    })();
+
+    function updatePreviewUrl(slug) {
+        const urlDisplay = document.getElementById('preview-url');
+        urlDisplay.textContent = slug ? `${slug}.fly.dev` : 'your-shop.fly.dev';
+    }
+
+    function selectTheme(themeId) {
+        selectedTheme = themeId;
+        
+        document.querySelectorAll('.theme-card').forEach(card => {
+            card.classList.remove('border-primary');
+            card.classList.add('border-gray-200', 'dark:border-gray-600');
+            card.querySelector('.check-icon').classList.add('hidden');
+        });
+
+        const selected = document.getElementById(`theme-card-${themeId}`);
+        selected.classList.remove('border-gray-200', 'dark:border-gray-600');
+        selected.classList.add('border-primary');
+        selected.querySelector('.check-icon').classList.remove('hidden');
+
+        const previewImg = document.getElementById('preview-image');
+        previewImg.style.opacity = '0.5';
+        setTimeout(() => {
+            // Placeholder: image update
+            previewImg.style.opacity = '1';
+        }, 200);
+    }
+
+    async function createShop() {
+        const shop_name = document.getElementById('shop_name').value.trim();
+        const admin_email = document.getElementById('admin_email').value.trim();
+        const admin_password = document.getElementById('admin_password').value.trim();
+
+        if (!shop_name || !admin_email || !admin_password) {
+            alert(_t('alert_fill_fields'));
+            return;
+        }
+
+        // Check Credits
+        if (!MOCK_DB.spendCredits(100, `Created Shop: ${shop_name}`)) {
+            alert(_t('alert_insufficient_credits'));
+            return;
+        }
+
+        const btn = document.getElementById('btn-create-shop');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-lg">progress_activity</span> Processing...`;
+        btn.disabled = true;
+
+        setTimeout(() => {
+            MOCK_DB.addShop({ 
+                shop_name, 
+                theme: selectedTheme 
+            });
+            
+            alert(_t('alert_creation_started'));
+            window.location.href = 'dashboard.html';
+        }, 1500);
+    }
+</script>
+</body>
+</html>
