@@ -3,560 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ShopSaaS - Create Your Online Store</title>
+    <title>DrSell - Build Your Global E-commerce Empire</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Google Sans"', 'Inter', 'sans-serif'],
+                        display: ['"Google Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        google: {
+                            blue: '#1a73e8',
+                            blue_hover: '#1557b0',
+                            gray: '#f1f3f4',
+                            text: '#202124',
+                            surface: '#ffffff',
+                            secondary: '#5f6368'
+                        }
+                    },
+                    borderRadius: {
+                        '4xl': '32px',
+                        'pill': '9999px',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 400px;
-            width: 100%;
-            padding: 40px;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 28px;
-        }
-        .subtitle {
-            color: #666;
-            margin-bottom: 32px;
-            font-size: 16px;
-        }
-        .auth-section {
-            margin-bottom: 32px;
-        }
-        .auth-button {
-            width: 100%;
-            padding: 12px 20px;
-            margin: 8px 0;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            background: white;
-            color: #333;
-            font-size: 16px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            transition: all 0.2s ease;
-        }
-        .auth-button:hover {
-            border-color: #667eea;
-            transform: translateY(-1px);
-        }
-        .auth-button.google {
-            border-color: #db4437;
-        }
-        .auth-button.google:hover {
-            background: #db4437;
-            color: white;
-        }
-        .auth-button.github {
-            border-color: #333;
-        }
-        .auth-button.github:hover {
-            background: #333;
-            color: white;
-        }
-        .divider {
-            margin: 24px 0;
-            position: relative;
-        }
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #ddd;
-        }
-        .divider span {
-            background: white;
-            padding: 0 16px;
-            color: #666;
-            font-size: 14px;
-        }
-        .email-form {
-            text-align: left;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-        input[type="email"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.2s;
-        }
-        input[type="email"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        .primary-button {
-            width: 100%;
-            padding: 14px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .primary-button:hover {
-            background: #5a67d8;
-        }
-        .primary-button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        .message {
-            margin-top: 16px;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        .message.success {
-            background: #f0fff4;
-            color: #38a169;
-            border: 1px solid #c6f6d5;
-        }
-        .message.error {
-            background: #fed7d7;
-            color: #e53e3e;
-            border: 1px solid #feb2b2;
-        }
-        .dashboard {
-            display: none;
-        }
-        .dashboard.active {
-            display: block;
-        }
-        .user-info {
-            background: #f7fafc;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 24px;
-            text-align: left;
-        }
-        .user-info h3 {
-            margin-bottom: 8px;
-            color: #2d3748;
-        }
-        .shops-section h3 {
-            text-align: left;
-            margin-bottom: 16px;
-            color: #2d3748;
-        }
-        .shop-item {
-            background: #f7fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 12px;
-            text-align: left;
-        }
-        .shop-item h4 {
-            margin-bottom: 8px;
-            color: #2d3748;
-        }
-        .shop-status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .shop-status.creating {
-            background: #fef5e7;
-            color: #d69e2e;
-        }
-        .shop-status.active {
-            background: #f0fff4;
-            color: #38a169;
-        }
-        .shop-status.failed {
-            background: #fed7d7;
-            color: #e53e3e;
-        }
-        .create-shop-form {
-            background: #f7fafc;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 24px;
-            text-align: left;
-        }
-        .logout-button {
-            color: #667eea;
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            text-decoration: underline;
-        }
+        body { font-family: 'Google Sans', 'Inter', sans-serif; background-color: #ffffff; color: #202124; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .banana-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .banana-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.08); }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Login Section -->
-        <div id="login-section">
-            <h1>ShopSaaS</h1>
-            <p class="subtitle">Create and manage your online stores</p>
-            
-            <div class="auth-section">
-                <a href="/auth/google" class="auth-button google">
-                    🔍 Continue with Google
-                </a>
-                <a href="/auth/github" class="auth-button github">
-                    🐙 Continue with GitHub
-                </a>
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.scrollTo(0,0)">
+                <span class="material-symbols-outlined text-google-blue text-3xl">storefront</span>
+                <span class="text-2xl font-bold tracking-tight text-gray-800">DrSell</span>
             </div>
-            
-            <div class="divider">
-                <span>or</span>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-sm font-medium text-google-secondary hover:text-google-text" data-i18n="nav_features">Features</a>
+                <a href="#templates" class="text-sm font-medium text-google-secondary hover:text-google-text" data-i18n="nav_templates">Templates</a>
+                <a href="#pricing" class="text-sm font-medium text-google-secondary hover:text-google-text" data-i18n="nav_pricing">Pricing</a>
             </div>
-            
-            <form id="email-form" class="email-form">
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" placeholder="you@example.com" required>
-                </div>
-                <button type="submit" class="primary-button" id="email-submit">
-                    Send Magic Link
+            <div class="flex items-center gap-3">
+                <button onclick="toggleLanguage()" class="text-sm font-medium text-google-text hover:text-google-blue px-3 py-2 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-lg">language</span>
+                    <span id="lang-label">EN</span>
                 </button>
-            </form>
-            
-            <div id="message" class="message" style="display: none;"></div>
-
-            <div class="divider" style="margin-top:24px">
-              <span>or</span>
+                <a href="login.html" class="text-sm font-medium text-google-text hover:text-google-blue px-4 py-2" data-i18n="nav_login">Log in</a>
+                <a href="login.html" class="bg-google-blue text-white text-sm font-medium px-6 py-2.5 rounded-pill hover:bg-google-blue_hover transition-colors shadow-md hover:shadow-lg" data-i18n="nav_get_started">
+                    Get Started
+                </a>
             </div>
-
-            <form id="password-form" class="email-form">
-              <div class="form-group">
-                <label for="password-email">Email Address</label>
-                <input type="email" id="password-email" name="password-email" placeholder="you@example.com" required>
-              </div>
-              <div class="form-group">
-                <label for="password-password">Password</label>
-                <input type="password" id="password-password" name="password-password" placeholder="Your password" required>
-              </div>
-              <button type="submit" class="primary-button" id="password-submit">Sign in with password</button>
-              <div style="margin-top:10px; font-size:14px;">
-                <a href="#" onclick="forgotPassword(); return false;">Forgot password?</a>
-                <span style="color:#999; margin: 0 6px;">•</span>
-                <a href="#" onclick="registerAccount(); return false;">Create account</a>
-              </div>
-            </form>
-
-            <div id="password-message" class="message" style="display:none;"></div>
         </div>
+    </nav>
 
-        <!-- Dashboard Section -->
-        <div id="dashboard-section" class="dashboard">
-            <div class="user-info">
-                <h3 id="user-name">Welcome!</h3>
-                <p id="user-email"></p>
-                <button class="logout-button" onclick="logout()">Logout</button>
+    <!-- Hero Section -->
+    <section class="pt-20 pb-32 px-6">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="inline-flex items-center gap-2 bg-blue-50 text-google-blue px-4 py-1.5 rounded-full text-sm font-medium mb-8">
+                <span class="material-symbols-outlined text-lg">verified</span>
+                <span data-i18n="hero_verified">1-Month Free Trial for New Users</span>
             </div>
+            <h1 class="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 mb-6 leading-tight">
+                <span data-i18n="hero_title_1">Your Global Commerce,</span><br>
+                <span class="text-google-blue" data-i18n="hero_title_2">Simplified.</span>
+            </h1>
+            <p class="text-xl text-google-secondary max-w-2xl mx-auto mb-10" data-i18n="hero_subtitle">
+                DrSell is the all-in-one platform to build, manage, and scale your cross-border business. From AI support to global payments, we've got you covered.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="login.html" class="w-full sm:w-auto bg-google-blue text-white text-lg font-medium px-8 py-4 rounded-pill hover:bg-google-blue_hover transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+                    <span data-i18n="hero_start_trial">Start Free Trial</span>
+                    <span class="material-symbols-outlined">arrow_forward</span>
+                </a>
+                <button class="w-full sm:w-auto bg-white text-google-text border border-gray-200 text-lg font-medium px-8 py-4 rounded-pill hover:bg-gray-50 transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">play_circle</span>
+                    <span data-i18n="hero_watch_demo">Watch Demo</span>
+                </button>
+            </div>
+        </div>
+    </section>
 
-            <div class="shops-section">
-                <h3>Your Shops</h3>
-                <div id="shops-list"></div>
-                
-                <div class="create-shop-form">
-                    <h4 style="margin-bottom: 16px;">Create New Shop</h4>
-                    <form id="create-shop-form">
-                        <div class="form-group">
-                            <label for="shop_name">Shop Name</label>
-                            <input type="text" id="shop_name" name="shop_name" placeholder="My Awesome Store" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="admin_email">Admin Email</label>
-                            <input type="email" id="admin_email" name="admin_email" placeholder="admin@yourstore.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="admin_password">Admin Password</label>
-                            <input type="password" id="admin_password" name="admin_password" placeholder="Strong password" required>
-                        </div>
-                        <button type="submit" class="primary-button" id="create-shop-submit">
-                            Create Shop
-                        </button>
-                    </form>
+    <!-- Core Features (Banana Cards) -->
+    <section id="features" class="py-20 bg-google-gray">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4" data-i18n="features_title">Everything needed to go global</h2>
+                <p class="text-google-secondary text-lg" data-i18n="features_subtitle">Powerful tools wrapped in a simple, intuitive interface.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="banana-card bg-white p-8 rounded-4xl border border-gray-100">
+                    <div class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 text-google-blue">
+                        <span class="material-symbols-outlined text-3xl">rocket_launch</span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3" data-i18n="feature_launch_title">Rapid Launch</h3>
+                    <p class="text-google-secondary leading-relaxed" data-i18n="feature_launch_desc">
+                        Deploy a fully functional e-commerce site in minutes. No coding required. Just choose a domain and go live.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="banana-card bg-white p-8 rounded-4xl border border-gray-100">
+                    <div class="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mb-6 text-purple-600">
+                        <span class="material-symbols-outlined text-3xl">smart_toy</span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3" data-i18n="feature_ai_title">AI Customer Service</h3>
+                    <p class="text-google-secondary leading-relaxed" data-i18n="feature_ai_desc">
+                        Intelligent chatbots handling inquiries 24/7 in multiple languages. Reduce support costs by up to 80%.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="banana-card bg-white p-8 rounded-4xl border border-gray-100">
+                    <div class="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-6 text-green-600">
+                        <span class="material-symbols-outlined text-3xl">payments</span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-3" data-i18n="feature_payment_title">Global Payments</h3>
+                    <p class="text-google-secondary leading-relaxed" data-i18n="feature_payment_desc">
+                        Seamless cross-border transactions. Accept payments in local currencies and settle in yours effortlessly.
+                    </p>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <!-- Industry Templates -->
+    <section id="templates" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-12">
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4" data-i18n="templates_title">Tailored for your industry</h2>
+                    <p class="text-google-secondary text-lg" data-i18n="templates_subtitle">Professional templates optimized for conversion.</p>
+                </div>
+                <a href="#" class="text-google-blue font-medium hover:underline mt-4 md:mt-0 flex items-center gap-1">
+                    <span data-i18n="templates_view_all">View all templates</span> <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Medical -->
+                <div class="group relative rounded-4xl overflow-hidden cursor-pointer">
+                    <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80" alt="Medical" class="w-full h-80 object-cover transition duration-500 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-8">
+                        <span class="text-white/80 text-sm font-medium mb-1" data-i18n="temp_coming_soon">Coming Soon</span>
+                        <h3 class="text-white text-2xl font-bold" data-i18n="temp_medical">Medical Devices</h3>
+                    </div>
+                </div>
+                <!-- Health -->
+                <div class="group relative rounded-4xl overflow-hidden cursor-pointer">
+                    <img src="https://images.unsplash.com/photo-1571781926291-28b46c54908d?auto=format&fit=crop&w=800&q=80" alt="Health" class="w-full h-80 object-cover transition duration-500 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-8">
+                        <span class="text-white/80 text-sm font-medium mb-1" data-i18n="temp_popular">Popular</span>
+                        <h3 class="text-white text-2xl font-bold" data-i18n="temp_health">Health & Wellness</h3>
+                    </div>
+                </div>
+                <!-- Electronics -->
+                <div class="group relative rounded-4xl overflow-hidden cursor-pointer">
+                    <img src="https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=800&q=80" alt="Electronics" class="w-full h-80 object-cover transition duration-500 group-hover:scale-105">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-8">
+                        <span class="text-white/80 text-sm font-medium mb-1" data-i18n="temp_new">New</span>
+                        <h3 class="text-white text-2xl font-bold" data-i18n="temp_electronics">Consumer Electronics</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="py-16 bg-google-gray border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-google-secondary font-medium mb-8 uppercase tracking-wide text-sm" data-i18n="tech_stack_title">Supported Technologies</p>
+            <div class="flex flex-wrap justify-center items-center gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                <h3 class="text-2xl font-bold text-gray-700">WordPress</h3>
+                <h3 class="text-2xl font-bold text-gray-700">WooCommerce</h3>
+                <h3 class="text-2xl font-bold text-gray-700">PayloadCMS</h3>
+                <h3 class="text-2xl font-bold text-gray-700">EverShop</h3>
+                <h3 class="text-2xl font-bold text-gray-700">Next.js</h3>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-12">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center gap-2 mb-4 md:mb-0">
+                <span class="material-symbols-outlined text-google-blue">storefront</span>
+                <span class="text-xl font-bold text-gray-800">DrSell</span>
+            </div>
+            <div class="text-google-secondary text-sm" data-i18n="footer_copyright">
+                &copy; 2025 ShopSaaS Inc. All rights reserved.
+            </div>
+        </div>
+    </footer>
 
     <script>
-        // Check if user is logged in on page load
-        checkAuth();
-
-        async function checkAuth() {
-            try {
-                const response = await fetch('/api/user');
-                const data = await response.json();
-                
-                if (data.user) {
-                    showDashboard(data.user);
-                } else {
-                    showLogin();
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                showLogin();
+        const translations = {
+            en: {
+                nav_features: "Features",
+                nav_templates: "Templates",
+                nav_pricing: "Pricing",
+                nav_login: "Log in",
+                nav_get_started: "Get Started",
+                hero_verified: "1-Month Free Trial for New Users",
+                hero_title_1: "Your Global Commerce,",
+                hero_title_2: "Simplified.",
+                hero_subtitle: "DrSell is the all-in-one platform to build, manage, and scale your cross-border business. From AI support to global payments, we've got you covered.",
+                hero_start_trial: "Start Free Trial",
+                hero_watch_demo: "Watch Demo",
+                features_title: "Everything needed to go global",
+                features_subtitle: "Powerful tools wrapped in a simple, intuitive interface.",
+                feature_launch_title: "Rapid Launch",
+                feature_launch_desc: "Deploy a fully functional e-commerce site in minutes. No coding required. Just choose a domain and go live.",
+                feature_ai_title: "AI Customer Service",
+                feature_ai_desc: "Intelligent chatbots handling inquiries 24/7 in multiple languages. Reduce support costs by up to 80%.",
+                feature_payment_title: "Global Payments",
+                feature_payment_desc: "Seamless cross-border transactions. Accept payments in local currencies and settle in yours effortlessly.",
+                templates_title: "Tailored for your industry",
+                templates_subtitle: "Professional templates optimized for conversion.",
+                templates_view_all: "View all templates",
+                temp_coming_soon: "Coming Soon",
+                temp_medical: "Medical Devices",
+                temp_popular: "Popular",
+                temp_health: "Health & Wellness",
+                temp_new: "New",
+                temp_electronics: "Consumer Electronics",
+                tech_stack_title: "Supported Technologies",
+                footer_copyright: "© 2025 ShopSaaS Inc. All rights reserved."
+            },
+            zh: {
+                nav_features: "功能特点",
+                nav_templates: "行业模板",
+                nav_pricing: "价格方案",
+                nav_login: "登录",
+                nav_get_started: "立即开始",
+                hero_verified: "新用户首月免费试用",
+                hero_title_1: "全球跨境电商，",
+                hero_title_2: "由此简化。",
+                hero_subtitle: "DrSell 是您建立、管理和扩展跨境业务的一站式平台。从 AI 客服到全球支付，我们为您提供全方位支持。",
+                hero_start_trial: "开始免费试用",
+                hero_watch_demo: "观看演示",
+                features_title: "出海所需的一切",
+                features_subtitle: "强大的工具，简洁直观的界面。",
+                feature_launch_title: "极速上线",
+                feature_launch_desc: "几分钟内部署功能齐全的电商网站。无需编程，选好域名即可上线。",
+                feature_ai_title: "AI 智能客服",
+                feature_ai_desc: "智能聊天机器人 24/7 处理多语言咨询。降低高达 80% 的客服成本。",
+                feature_payment_title: "全球支付",
+                feature_payment_desc: "无缝跨境交易。支持本地货币收款，轻松结算。",
+                templates_title: "为您行业量身定制",
+                templates_subtitle: "专为高转化率设计的专业模板。",
+                templates_view_all: "查看所有模板",
+                temp_coming_soon: "即将推出",
+                temp_medical: "医疗器械",
+                temp_popular: "热门",
+                temp_health: "健康与保健",
+                temp_new: "新品",
+                temp_electronics: "消费电子",
+                tech_stack_title: "支持的技术",
+                footer_copyright: "© 2025 ShopSaaS Inc. 保留所有权利。"
             }
+        };
+
+        let currentLang = 'en';
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'zh' : 'en';
+            updateContent();
         }
 
-        function showLogin() {
-            document.getElementById('login-section').style.display = 'block';
-            document.getElementById('dashboard-section').style.display = 'none';
-        }
-
-        async function showDashboard(user) {
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('dashboard-section').style.display = 'block';
+        function updateContent() {
+            document.getElementById('lang-label').textContent = currentLang === 'en' ? 'EN' : '中';
             
-            document.getElementById('user-name').textContent = user.name || 'Welcome!';
-            document.getElementById('user-email').textContent = user.email;
-            
-            loadShops();
-        }
-
-        async function loadShops() {
-            try {
-                const response = await fetch('/api/shops');
-                const data = await response.json();
-                
-                // Filter out deleted shops from display
-                if (data.shops) {
-                    data.shops = data.shops.filter(s => s.status !== 'deleted');
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    el.textContent = translations[currentLang][key];
                 }
-                
-                const shopsList = document.getElementById('shops-list');
-                if (data.shops && data.shops.length > 0) {
-                    shopsList.innerHTML = data.shops.map(shop => `
-                        <div class="shop-item">
-                            <h4>${shop.shop_name}</h4>
-                            <p>URL: <a href="https://${shop.app_name}.fly.dev" target="_blank">${shop.app_name}.fly.dev</a></p>
-                            <p>Status: <span class="shop-status ${shop.status}">${shop.status}</span></p>
-                            <p>Created: ${new Date(shop.created_at).toLocaleDateString()}</p>
-                        </div>
-                    `).join('');
-                } else {
-                    shopsList.innerHTML = '<p style="color: #666;">No shops yet. Create your first shop below!</p>';
-                }
-            } catch (error) {
-                console.error('Failed to load shops:', error);
-                document.getElementById('shops-list').innerHTML = '<p style="color: #e53e3e;">Failed to load shops</p>';
-            }
-        }
-
-        // Email login form
-        document.getElementById('email-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('email-submit');
-            const messageEl = document.getElementById('message');
-            const email = document.getElementById('email').value;
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Sending...';
-            
-            try {
-                const response = await fetch('/auth/email/send', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email }),
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    messageEl.className = 'message success';
-                    messageEl.textContent = 'Magic link sent! Check your email.';
-                    messageEl.style.display = 'block';
-                } else {
-                    throw new Error(data.error || 'Failed to send magic link');
-                }
-            } catch (error) {
-                messageEl.className = 'message error';
-                messageEl.textContent = error.message;
-                messageEl.style.display = 'block';
-            }
-            
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Send Magic Link';
-        });
-
-        // Password login form
-        document.getElementById('password-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('password-submit');
-            const messageEl = document.getElementById('password-message');
-            const email = document.getElementById('password-email').value;
-            const password = document.getElementById('password-password').value;
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Signing in...';
-
-            try {
-                const response = await fetch('/auth/password/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    messageEl.className = 'message success';
-                    messageEl.textContent = 'Signed in successfully!';
-                    messageEl.style.display = 'block';
-                    // refresh auth state
-                    checkAuth();
-                } else {
-                    throw new Error(data.error || 'Login failed');
-                }
-            } catch (error) {
-                messageEl.className = 'message error';
-                messageEl.textContent = error.message;
-                messageEl.style.display = 'block';
-            }
-
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Sign in with password';
-        });
-
-        async function forgotPassword() {
-            const email = document.getElementById('password-email').value || prompt('Enter your email address');
-            if (!email) return;
-            const messageEl = document.getElementById('password-message');
-            try {
-                const resp = await fetch('/auth/password/forgot', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
-                });
-                await resp.json();
-                messageEl.className = 'message success';
-                messageEl.textContent = 'If the email exists, a reset link has been sent.';
-                messageEl.style.display = 'block';
-            } catch (e) {
-                messageEl.className = 'message error';
-                messageEl.textContent = 'Failed to send reset link';
-                messageEl.style.display = 'block';
-            }
-        }
-
-        async function registerAccount() {
-            const name = prompt('Your name (optional)') || null;
-            const email = document.getElementById('password-email').value || prompt('Your email');
-            if (!email) return;
-            const password = document.getElementById('password-password').value || prompt('Create a password (min 8 chars)');
-            if (!password || password.length < 8) {
-                alert('Password must be at least 8 characters.');
-                return;
-            }
-            const messageEl = document.getElementById('password-message');
-            try {
-                const resp = await fetch('/auth/password/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, name })
-                });
-                const data = await resp.json();
-                if (resp.ok) {
-                    messageEl.className = 'message success';
-                    messageEl.textContent = 'Account created. Please check your email to verify.';
-                    messageEl.style.display = 'block';
-                } else {
-                    throw new Error(data.error || 'Registration failed');
-                }
-            } catch (e) {
-                messageEl.className = 'message error';
-                messageEl.textContent = e.message;
-                messageEl.style.display = 'block';
-            }
-        }
-
-        // Create shop form
-        document.getElementById('create-shop-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submitBtn = document.getElementById('create-shop-submit');
-            const form = e.target;
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Creating...';
-            
-            try {
-                const formData = new FormData(form);
-                const data = {
-                    shop_name: formData.get('shop_name'),
-                    admin_email: formData.get('admin_email'),
-                    admin_password: formData.get('admin_password'),
-                };
-                
-                const response = await fetch('/api/shops', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data),
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    form.reset();
-                    loadShops(); // Reload the shops list
-                    alert('Shop creation started! This may take a few minutes.');
-                } else {
-                    throw new Error(result.error || 'Failed to create shop');
-                }
-            } catch (error) {
-                alert('Error: ' + error.message);
-            }
-            
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Create Shop';
-        });
-
-        async function logout() {
-            try {
-                await fetch('/auth/logout', { method: 'POST' });
-                showLogin();
-            } catch (error) {
-                console.error('Logout failed:', error);
-            }
+            });
         }
     </script>
 </body>
