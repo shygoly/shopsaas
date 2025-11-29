@@ -1,0 +1,272 @@
+
+🚀 Starting batch conversion of 8 design pages...
+📁 Output directory: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components
+📋 Payload directory: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs
+
+
+📄 Converting: landing_page...
+开始转换...
+✅ 转换完成！输出文件: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/LandingPage.tsx
+
+⚠️  警告:
+  - Ensure that the Radix UI components are styled to match the existing TailwindCSS styles.
+AI 增强分析失败，使用基础分析结果
+
+📦 Payload 输出:
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/LandingPage.payload.tsx
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/payload.config.ts
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/dynamic-mappings.json
+
+Summary:
+{
+  "status": "success",
+  "mode": "ai:kimi",
+  "output": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/LandingPage.tsx",
+  "imports": 3,
+  "components": 7,
+  "warnings": [
+    "Ensure that the Radix UI components are styled to match the existing TailwindCSS styles."
+  ],
+  "payload": {
+    "collection": "LandingPage",
+    "dir": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs",
+    "fields": 27
+  }
+}
+✅ Successfully converted: landing_page
+
+📄 Converting: dashboard...
+开始转换...
+✅ 转换完成！输出文件: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/Dashboard.tsx
+AI 增强分析失败，使用基础分析结果
+
+📦 Payload 输出:
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/Dashboard.payload.tsx
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/payload.config.ts
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/dynamic-mappings.json
+
+Summary:
+{
+  "status": "success",
+  "mode": "ai:kimi",
+  "output": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/Dashboard.tsx",
+  "imports": 0,
+  "components": 0,
+  "warnings": [],
+  "payload": {
+    "collection": "Dashboard",
+    "dir": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs",
+    "fields": 8
+  }
+}
+✅ Successfully converted: dashboard
+
+📄 Converting: registration...
+开始转换...
+✅ 转换完成！输出文件: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/Registration.tsx
+AI 增强分析失败，使用基础分析结果
+
+📦 Payload 输出:
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/Registration.payload.tsx
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/payload.config.ts
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/dynamic-mappings.json
+
+Summary:
+{
+  "status": "success",
+  "mode": "ai:kimi",
+  "output": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/Registration.tsx",
+  "imports": 0,
+  "components": 0,
+  "warnings": [],
+  "payload": {
+    "collection": "Registration",
+    "dir": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs",
+    "fields": 6
+  }
+}
+✅ Successfully converted: registration
+
+📄 Converting: shop_details...
+开始转换...
+✅ 转换完成！输出文件: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/ShopDetails.tsx
+
+⚠️  警告:
+  - Custom styles and classes will need to be converted to Radix UI's style and class approach.
+AI 增强分析失败，使用基础分析结果
+
+📦 Payload 输出:
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/ShopDetails.payload.tsx
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/payload.config.ts
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/dynamic-mappings.json
+
+Summary:
+{
+  "status": "success",
+  "mode": "ai:kimi",
+  "output": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/ShopDetails.tsx",
+  "imports": 7,
+  "components": 6,
+  "warnings": [
+    "Custom styles and classes will need to be converted to Radix UI's style and class approach."
+  ],
+  "payload": {
+    "collection": "ShopDetails",
+    "dir": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs",
+    "fields": 18
+  }
+}
+✅ Successfully converted: shop_details
+
+📄 Converting: ai_assistant_management...
+开始转换...
+✅ 转换完成！输出文件: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/AiAssistantManagement.tsx
+
+⚠️  警告:
+  - The current HTML structure uses TailwindCSS for styling, which may need to be adapted to match Radix UI's styling approach.
+AI 增强分析失败，使用基础分析结果
+
+📦 Payload 输出:
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/AIAssistantManagement.payload.tsx
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/payload.config.ts
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/dynamic-mappings.json
+
+Summary:
+{
+  "status": "success",
+  "mode": "ai:kimi",
+  "output": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/AiAssistantManagement.tsx",
+  "imports": 6,
+  "components": 6,
+  "warnings": [
+    "The current HTML structure uses TailwindCSS for styling, which may need to be adapted to match Radix UI's styling approach."
+  ],
+  "payload": {
+    "collection": "AIAssistantManagement",
+    "dir": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs",
+    "fields": 16
+  }
+}
+✅ Successfully converted: ai_assistant_management
+
+📄 Converting: shop_management...
+开始转换...
+✅ 转换完成！输出文件: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/ShopManagement.tsx
+AI 增强分析失败，使用基础分析结果
+
+📦 Payload 输出:
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/ShopManagement.payload.tsx
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/payload.config.ts
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/dynamic-mappings.json
+
+Summary:
+{
+  "status": "success",
+  "mode": "ai:kimi",
+  "output": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/ShopManagement.tsx",
+  "imports": 0,
+  "components": 0,
+  "warnings": [],
+  "payload": {
+    "collection": "ShopManagement",
+    "dir": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs",
+    "fields": 2
+  }
+}
+✅ Successfully converted: shop_management
+
+📄 Converting: create_shop...
+开始转换...
+[AIConverter] JSON 解析失败，使用回退结果。 SyntaxError: Unterminated string in JSON at position 23887 (line 411 column 67)
+    at JSON.parse (<anonymous>)
+    at AIConverter.requestJSON (file:///Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/dist/converters/ai-converter.js:75:29)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async AIConverter.analyzeAndPlan (file:///Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/dist/converters/ai-converter.js:55:24)
+    at async AIConverter.convert (file:///Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/dist/converters/ai-converter.js:10:50)
+    at async Command.<anonymous> (file:///Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/dist/cli.js:81:22)
+✅ 转换完成！输出文件: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/CreateShop.tsx
+
+⚠️  警告:
+  - AI 响应解析失败，返回空方案
+AI 增强分析失败，使用基础分析结果
+
+📦 Payload 输出:
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/CreateShop.payload.tsx
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/payload.config.ts
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/dynamic-mappings.json
+
+Summary:
+{
+  "status": "success",
+  "mode": "ai:kimi",
+  "output": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/CreateShop.tsx",
+  "imports": 0,
+  "components": 0,
+  "warnings": [
+    "AI 响应解析失败，返回空方案"
+  ],
+  "payload": {
+    "collection": "CreateShop",
+    "dir": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs",
+    "fields": 18
+  }
+}
+✅ Successfully converted: create_shop
+
+📄 Converting: credit_and_billing...
+开始转换...
+✅ 转换完成！输出文件: /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/CreditAndBilling.tsx
+
+⚠️  警告:
+  - Custom styles and scripts may need to be adapted to work with Radix UI components.
+AI 增强分析失败，使用基础分析结果
+
+📦 Payload 输出:
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/CreditAndBilling.payload.tsx
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/payload.config.ts
+  - /Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs/dynamic-mappings.json
+
+Summary:
+{
+  "status": "success",
+  "mode": "ai:kimi",
+  "output": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/components/CreditAndBilling.tsx",
+  "imports": 7,
+  "components": 8,
+  "warnings": [
+    "Custom styles and scripts may need to be adapted to work with Radix UI components."
+  ],
+  "payload": {
+    "collection": "CreditAndBilling",
+    "dir": "/Users/mac/Sync/project/ecommerce/shopsaas/htmlconverter/converted/payload-configs",
+    "fields": 14
+  }
+}
+✅ Successfully converted: credit_and_billing
+
+==================================================
+✅ Conversion complete!
+  Completed: 8/8
+==================================================
+
+📦 Generated components (8):
+   - AiAssistantManagement.tsx
+   - CreateShop.tsx
+   - CreditAndBilling.tsx
+   - Dashboard.tsx
+   - LandingPage.tsx
+   - Registration.tsx
+   - ShopDetails.tsx
+   - ShopManagement.tsx
+
+⚙️  Generated Payload configs (10):
+   - AIAssistantManagement.payload.tsx
+   - CreateShop.payload.tsx
+   - CreditAndBilling.payload.tsx
+   - Dashboard.payload.tsx
+   - LandingPage.payload.tsx
+   - Registration.payload.tsx
+   - ShopDetails.payload.tsx
+   - ShopManagement.payload.tsx
+   - dynamic-mappings.json
+   - payload.config.ts

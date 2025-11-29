@@ -97,7 +97,7 @@ class ShopCreationProcessor {
       // Step 2: Trigger GitHub Workflow to deploy shop
       console.log(`🚀 Triggering GitHub Workflow for shop deployment: ${app_name}`);
       
-      const image = process.env.EVERSHOP_IMAGE || 'registry.fly.io/evershop-fly:deployment-01K88VT3QAADMPVZT2SBX08V0R';
+      const image = process.env.EVERSHOP_IMAGE || 'registry.fly.io/evershop-fly:deployment-01KB443273PJVSTHG1X6DJ4GE1';
       const callbackUrl = `${process.env.BASE_URL || 'https://shopsaas.fly.dev'}/api/webhooks/deployment`;
       
       const { githubClient } = await import('./github.js');
